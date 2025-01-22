@@ -1,0 +1,127 @@
+[gd_scene load_steps=5 format=3 uid="uid://cegrmu7vri1fx"]
+
+[ext_resource type="ArrayMesh" uid="uid://dt6tajda7fr6a" path="res://assets/hexagon_tiles_1/meshpaths/Sketchfab_Scene_dessert_sand_0.res" id="1_6ka3i"]
+[ext_resource type="ArrayMesh" uid="uid://c3p73othdgf1n" path="res://assets/hexagon_tiles_1/meshpaths/Sketchfab_Scene_Cylinder_008_leaves_0.res" id="2_tf13a"]
+
+[sub_resource type="GDScript" id="GDScript_n1yqk"]
+resource_name = "testhextile"
+script/source = "extends Node3D
+
+
+# Called when the node enters the scene tree for the first time.
+func _ready() -> void:
+	pass # Replace with function body.
+
+
+# Called every frame. 'delta' is the elapsed time since the previous frame.
+func _process(delta: float) -> void:
+	pass
+
+var q:
+	get: return %Q_val.text
+	set(value): %Q_val.text = value
+var r:
+	get: return %R_val.text
+	set(value): %R_val.text = value
+var s:
+	get: return %S_val.text
+	set(value): %S_val.text = value
+var ti:
+	get: return %TI_val.text
+	set(value): %TI_val.text = value
+"
+
+[sub_resource type="BoxMesh" id="BoxMesh_pon3v"]
+size = Vector3(0.005, 0.02, 0.8)
+
+[node name="Testtile1" type="Node3D"]
+script = SubResource("GDScript_n1yqk")
+
+[node name="tileborder" type="Node3D" parent="."]
+
+[node name="MeshInstance3D4" type="MeshInstance3D" parent="tileborder"]
+transform = Transform3D(-0.5, 0, 0.866025, 0, 1, 0, -0.866025, 0, -0.5, -0.425, 0.05, -0.736122)
+mesh = SubResource("BoxMesh_pon3v")
+skeleton = NodePath("../..")
+
+[node name="MeshInstance3D5" type="MeshInstance3D" parent="tileborder"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.85, 0.05, 0)
+mesh = SubResource("BoxMesh_pon3v")
+skeleton = NodePath("../..")
+
+[node name="MeshInstance3D6" type="MeshInstance3D" parent="tileborder"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.85, 0.05, 0)
+mesh = SubResource("BoxMesh_pon3v")
+skeleton = NodePath("../..")
+
+[node name="MeshInstance3D7" type="MeshInstance3D" parent="tileborder"]
+transform = Transform3D(0.5, 0, 0.866025, 0, 1, 0, -0.866025, 0, 0.5, 0.425, 0.05, -0.736122)
+mesh = SubResource("BoxMesh_pon3v")
+skeleton = NodePath("../..")
+
+[node name="MeshInstance3D8" type="MeshInstance3D" parent="tileborder"]
+transform = Transform3D(0.5, 0, 0.866025, 0, 1, 0, -0.866025, 0, 0.5, -0.425, 0.05, 0.736122)
+mesh = SubResource("BoxMesh_pon3v")
+skeleton = NodePath("../..")
+
+[node name="MeshInstance3D9" type="MeshInstance3D" parent="tileborder"]
+transform = Transform3D(-0.5, 0, 0.866025, 0, 1, 0, -0.866025, 0, -0.5, 0.425, 0.05, 0.736122)
+mesh = SubResource("BoxMesh_pon3v")
+skeleton = NodePath("../..")
+
+[node name="qrs box" type="Node3D" parent="."]
+transform = Transform3D(0.866025, 0.5, 2.18557e-08, 0, -4.37114e-08, 1, 0.5, -0.866025, -3.78552e-08, 0, 0.3, 0)
+
+[node name="Q_val" type="Label3D" parent="qrs box"]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.61626, 0)
+text = "-00"
+
+[node name="Q_lab" type="Label3D" parent="qrs box/Q_val"]
+transform = Transform3D(1, 0, 0, 0, 1, -3.55271e-15, 0, 3.55271e-15, 1, 0, -0.128309, 0)
+text = "Q"
+font_size = 16
+
+[node name="TI_val" type="Label3D" parent="qrs box"]
+unique_name_in_owner = true
+transform = Transform3D(1, -2.98023e-08, 1.77636e-15, 0, 1, 0, -1.77636e-15, 0, 1, -0.00175158, 0.0225658, -2.98023e-08)
+text = "-00"
+
+[node name="TI_lab" type="Label3D" parent="qrs box/TI_val"]
+transform = Transform3D(1, 0, 0, 0, 1, -3.55271e-15, 0, 3.55271e-15, 1, 0, -0.128309, 0)
+text = "tile index"
+font_size = 16
+
+[node name="S_val" type="Label3D" parent="qrs box"]
+unique_name_in_owner = true
+transform = Transform3D(1, -2.98023e-08, 1.77636e-15, 0, 1, 0, -1.77636e-15, 0, 1, -0.574724, -0.250839, -2.98023e-08)
+text = "-00"
+
+[node name="S_lab" type="Label3D" parent="qrs box/S_val"]
+transform = Transform3D(1, 0, 0, 0, 1, -3.55271e-15, 0, 3.55271e-15, 1, 0, -0.128309, 0)
+text = "S"
+font_size = 16
+
+[node name="R_val" type="Label3D" parent="qrs box"]
+unique_name_in_owner = true
+transform = Transform3D(1, -1.19209e-07, 1.77636e-15, 0, 1, 3.55271e-15, -7.10543e-15, -3.55271e-15, 1, 0.490982, -0.276432, 2.98023e-08)
+text = "-00"
+
+[node name="R_label" type="Label3D" parent="qrs box/R_val"]
+transform = Transform3D(1, 0, 0, 0, 1, -3.55271e-15, 0, 3.55271e-15, 1, 0, -0.128309, 0)
+text = "R"
+font_size = 16
+
+[node name="dessert" type="Node3D" parent="."]
+transform = Transform3D(1, 2.22045e-16, 2.22045e-16, -2.22045e-16, 1, 7.54979e-08, -2.22045e-16, -7.54979e-08, 1, 0, 0, 0)
+
+[node name="dessert_sand_0" type="MeshInstance3D" parent="dessert"]
+mesh = ExtResource("1_6ka3i")
+skeleton = NodePath("")
+
+[node name="Cylinder_008" type="Node3D" parent="dessert"]
+transform = Transform3D(1, 2.22045e-16, -2.22045e-16, 2.22045e-16, -1.62921e-07, 1, 2.22045e-16, -1, -1.62921e-07, -0.000814438, 0.154237, 0.0400624)
+
+[node name="Cylinder_008_leaves_0" type="MeshInstance3D" parent="dessert/Cylinder_008"]
+mesh = ExtResource("2_tf13a")
+skeleton = NodePath("")

@@ -1,0 +1,399 @@
+[remap]
+
+importer="scene"
+importer_version=1
+type="PackedScene"
+uid="uid://chsankrguennb"
+path="res://.godot/imported/scene.gltf-6c24e3fb59de95af4f337ba0a47d902c.scn"
+
+[deps]
+
+source_file="res://assets/hexagon_tiles_1/scene.gltf"
+dest_files=["res://.godot/imported/scene.gltf-6c24e3fb59de95af4f337ba0a47d902c.scn"]
+
+[params]
+
+nodes/root_type=""
+nodes/root_name=""
+nodes/apply_root_scale=true
+nodes/root_scale=1.0
+nodes/import_as_skeleton_bones=false
+meshes/ensure_tangents=true
+meshes/generate_lods=true
+meshes/create_shadow_meshes=true
+meshes/light_baking=1
+meshes/lightmap_texel_size=0.2
+meshes/force_disable_compression=false
+skins/use_named_skins=true
+animation/import=true
+animation/fps=30
+animation/trimming=false
+animation/remove_immutable_tracks=true
+animation/import_rest_as_RESET=false
+import_script/path=""
+_subresources={
+"meshes": {
+"Sketchfab_Scene_Cylinder_003_red_0": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 60.0,
+"lods/normal_split_angle": 25.0,
+"save_to_file/enabled": true,
+"save_to_file/path": "res://assets/hexagon_tiles_1/meshpaths/Sketchfab_Scene_Cylinder_003_red_0.res"
+},
+"Sketchfab_Scene_Cylinder_003_rock_0": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 60.0,
+"lods/normal_split_angle": 25.0,
+"save_to_file/enabled": true,
+"save_to_file/path": "res://assets/hexagon_tiles_1/meshpaths/Sketchfab_Scene_Cylinder_003_rock_0.res"
+},
+"Sketchfab_Scene_Cylinder_003_wood_0": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 60.0,
+"lods/normal_split_angle": 25.0,
+"save_to_file/enabled": true,
+"save_to_file/path": "res://assets/hexagon_tiles_1/meshpaths/Sketchfab_Scene_Cylinder_003_wood_0.res"
+},
+"Sketchfab_Scene_Cylinder_008_leaves_0": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 60.0,
+"lods/normal_split_angle": 25.0,
+"save_to_file/enabled": true,
+"save_to_file/path": "res://assets/hexagon_tiles_1/meshpaths/Sketchfab_Scene_Cylinder_008_leaves_0.res"
+},
+"Sketchfab_Scene_Cylinder_023_leaves_0": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 60.0,
+"lods/normal_split_angle": 25.0,
+"save_to_file/enabled": true,
+"save_to_file/path": "res://assets/hexagon_tiles_1/meshpaths/Sketchfab_Scene_Cylinder_023_leaves_0.res"
+},
+"Sketchfab_Scene_Cylinder_023_wood_0": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 60.0,
+"lods/normal_split_angle": 25.0,
+"save_to_file/enabled": true,
+"save_to_file/path": "res://assets/hexagon_tiles_1/meshpaths/Sketchfab_Scene_Cylinder_023_wood_0.res"
+},
+"Sketchfab_Scene_Landscape_019_rock_0": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 60.0,
+"lods/normal_split_angle": 25.0,
+"save_to_file/enabled": true,
+"save_to_file/path": "res://assets/hexagon_tiles_1/meshpaths/Sketchfab_Scene_Landscape_019_rock_0.res"
+},
+"Sketchfab_Scene_Landscape_023_darkGreen_0": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 60.0,
+"lods/normal_split_angle": 25.0,
+"save_to_file/enabled": true,
+"save_to_file/path": "res://assets/hexagon_tiles_1/meshpaths/Sketchfab_Scene_Landscape_023_darkGreen_0.res"
+},
+"Sketchfab_Scene_Landscape_plane_swampWater_0": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 60.0,
+"lods/normal_split_angle": 25.0,
+"save_to_file/enabled": true,
+"save_to_file/path": "res://assets/hexagon_tiles_1/meshpaths/Sketchfab_Scene_Landscape_plane_swampWater_0.res"
+},
+"Sketchfab_Scene_clay pit_001_earth_0": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 60.0,
+"lods/normal_split_angle": 25.0,
+"save_to_file/enabled": true,
+"save_to_file/path": "res://assets/hexagon_tiles_1/meshpaths/Sketchfab_Scene_clay pit_001_earth_0.res"
+},
+"Sketchfab_Scene_clay pit_002_wood_0": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 60.0,
+"lods/normal_split_angle": 25.0,
+"save_to_file/enabled": true,
+"save_to_file/path": "res://assets/hexagon_tiles_1/meshpaths/Sketchfab_Scene_clay pit_002_wood_0.res"
+},
+"Sketchfab_Scene_clay pit_earth_0": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 60.0,
+"lods/normal_split_angle": 25.0,
+"save_to_file/enabled": true,
+"save_to_file/path": "res://assets/hexagon_tiles_1/meshpaths/Sketchfab_Scene_clay pit_earth_0.res"
+},
+"Sketchfab_Scene_clay pit_wood_0": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 60.0,
+"lods/normal_split_angle": 25.0,
+"save_to_file/enabled": true,
+"save_to_file/path": "res://assets/hexagon_tiles_1/meshpaths/Sketchfab_Scene_clay pit_wood_0.res"
+},
+"Sketchfab_Scene_dessert_sand_0": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 60.0,
+"lods/normal_split_angle": 25.0,
+"save_to_file/enabled": true,
+"save_to_file/path": "res://assets/hexagon_tiles_1/meshpaths/Sketchfab_Scene_dessert_sand_0.res"
+},
+"Sketchfab_Scene_forestlake_001_wood_0": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 60.0,
+"lods/normal_split_angle": 25.0,
+"save_to_file/enabled": true,
+"save_to_file/path": "res://assets/hexagon_tiles_1/meshpaths/Sketchfab_Scene_forestlake_001_wood_0.res"
+},
+"Sketchfab_Scene_forestlake_003_grass_0": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 60.0,
+"lods/normal_split_angle": 25.0,
+"save_to_file/enabled": true,
+"save_to_file/path": "res://assets/hexagon_tiles_1/meshpaths/Sketchfab_Scene_forestlake_003_grass_0.res"
+},
+"Sketchfab_Scene_forestlake_004_water_0": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 60.0,
+"lods/normal_split_angle": 25.0,
+"save_to_file/enabled": true,
+"save_to_file/path": "res://assets/hexagon_tiles_1/meshpaths/Sketchfab_Scene_forestlake_004_water_0.res"
+},
+"Sketchfab_Scene_forestlake_grass_0": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 60.0,
+"lods/normal_split_angle": 25.0,
+"save_to_file/enabled": true,
+"save_to_file/path": "res://assets/hexagon_tiles_1/meshpaths/Sketchfab_Scene_forestlake_grass_0.res"
+},
+"Sketchfab_Scene_newtree_005_leaves_0": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 60.0,
+"lods/normal_split_angle": 25.0,
+"save_to_file/enabled": true,
+"save_to_file/path": "res://assets/hexagon_tiles_1/meshpaths/Sketchfab_Scene_newtree_005_leaves_0.res"
+},
+"Sketchfab_Scene_newtree_005_wood_0": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 60.0,
+"lods/normal_split_angle": 25.0,
+"save_to_file/enabled": true,
+"save_to_file/path": "res://assets/hexagon_tiles_1/meshpaths/Sketchfab_Scene_newtree_005_wood_0.res"
+},
+"Sketchfab_Scene_normal forest_001_wood_0": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 60.0,
+"lods/normal_split_angle": 25.0,
+"save_to_file/enabled": true,
+"save_to_file/path": "res://assets/hexagon_tiles_1/meshpaths/Sketchfab_Scene_normal forest_001_wood_0.res"
+},
+"Sketchfab_Scene_normal forest_003_grass_0": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 60.0,
+"lods/normal_split_angle": 25.0,
+"save_to_file/enabled": true,
+"save_to_file/path": "res://assets/hexagon_tiles_1/meshpaths/Sketchfab_Scene_normal forest_003_grass_0.res"
+},
+"Sketchfab_Scene_normal forest_004_grass_0": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 60.0,
+"lods/normal_split_angle": 25.0,
+"save_to_file/enabled": true,
+"save_to_file/path": "res://assets/hexagon_tiles_1/meshpaths/Sketchfab_Scene_normal forest_004_grass_0.res"
+},
+"Sketchfab_Scene_normal forest_005_earth_0": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 60.0,
+"lods/normal_split_angle": 25.0,
+"save_to_file/enabled": true,
+"save_to_file/path": "res://assets/hexagon_tiles_1/meshpaths/Sketchfab_Scene_normal forest_005_earth_0.res"
+},
+"Sketchfab_Scene_normal forest_005_wood_0": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 60.0,
+"lods/normal_split_angle": 25.0,
+"save_to_file/enabled": true,
+"save_to_file/path": "res://assets/hexagon_tiles_1/meshpaths/Sketchfab_Scene_normal forest_005_wood_0.res"
+},
+"Sketchfab_Scene_normal forest_grass_0": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 60.0,
+"lods/normal_split_angle": 25.0,
+"save_to_file/enabled": true,
+"save_to_file/path": "res://assets/hexagon_tiles_1/meshpaths/Sketchfab_Scene_normal forest_grass_0.res"
+},
+"Sketchfab_Scene_sea_001_rock_0": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 60.0,
+"lods/normal_split_angle": 25.0,
+"save_to_file/enabled": true,
+"save_to_file/path": "res://assets/hexagon_tiles_1/meshpaths/Sketchfab_Scene_sea_001_rock_0.res"
+},
+"Sketchfab_Scene_sea_002_grass_0": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 60.0,
+"lods/normal_split_angle": 25.0,
+"save_to_file/enabled": true,
+"save_to_file/path": "res://assets/hexagon_tiles_1/meshpaths/Sketchfab_Scene_sea_002_grass_0.res"
+},
+"Sketchfab_Scene_sea_003_darkGreen_0": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 60.0,
+"lods/normal_split_angle": 25.0,
+"save_to_file/enabled": true,
+"save_to_file/path": "res://assets/hexagon_tiles_1/meshpaths/Sketchfab_Scene_sea_003_darkGreen_0.res"
+},
+"Sketchfab_Scene_sea_water_0": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 60.0,
+"lods/normal_split_angle": 25.0,
+"save_to_file/enabled": true,
+"save_to_file/path": "res://assets/hexagon_tiles_1/meshpaths/Sketchfab_Scene_sea_water_0.res"
+},
+"Sketchfab_Scene_startingTile_grass_0": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 60.0,
+"lods/normal_split_angle": 25.0,
+"save_to_file/enabled": true,
+"save_to_file/path": "res://assets/hexagon_tiles_1/meshpaths/Sketchfab_Scene_startingTile_grass_0.res"
+},
+"Sketchfab_Scene_startingTile_wood_0": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 60.0,
+"lods/normal_split_angle": 25.0,
+"save_to_file/enabled": true,
+"save_to_file/path": "res://assets/hexagon_tiles_1/meshpaths/Sketchfab_Scene_startingTile_wood_0.res"
+},
+"Sketchfab_Scene_tile  crop Farm_001_earth_0": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 60.0,
+"lods/normal_split_angle": 25.0,
+"save_to_file/enabled": true,
+"save_to_file/path": "res://assets/hexagon_tiles_1/meshpaths/Sketchfab_Scene_tile  crop Farm_001_earth_0.res"
+},
+"Sketchfab_Scene_tile  crop Farm_grass_0": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 60.0,
+"lods/normal_split_angle": 25.0,
+"save_to_file/enabled": true,
+"save_to_file/path": "res://assets/hexagon_tiles_1/meshpaths/Sketchfab_Scene_tile  crop Farm_grass_0.res"
+},
+"Sketchfab_Scene_tile animalFarm_001_wood_0": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 60.0,
+"lods/normal_split_angle": 25.0,
+"save_to_file/enabled": true,
+"save_to_file/path": "res://assets/hexagon_tiles_1/meshpaths/Sketchfab_Scene_tile animalFarm_001_wood_0.res"
+},
+"Sketchfab_Scene_tile animalFarm_grass_0": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 60.0,
+"lods/normal_split_angle": 25.0,
+"save_to_file/enabled": true,
+"save_to_file/path": "res://assets/hexagon_tiles_1/meshpaths/Sketchfab_Scene_tile animalFarm_grass_0.res"
+},
+"Sketchfab_Scene_tile mine_001_earth_0": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 60.0,
+"lods/normal_split_angle": 25.0,
+"save_to_file/enabled": true,
+"save_to_file/path": "res://assets/hexagon_tiles_1/meshpaths/Sketchfab_Scene_tile mine_001_earth_0.res"
+},
+"Sketchfab_Scene_tile mine_rock_0": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 60.0,
+"lods/normal_split_angle": 25.0,
+"save_to_file/enabled": true,
+"save_to_file/path": "res://assets/hexagon_tiles_1/meshpaths/Sketchfab_Scene_tile mine_rock_0.res"
+},
+"Sketchfab_Scene_tree_006_leaves_0": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 60.0,
+"lods/normal_split_angle": 25.0,
+"save_to_file/enabled": true,
+"save_to_file/path": "res://assets/hexagon_tiles_1/meshpaths/Sketchfab_Scene_tree_006_leaves_0.res"
+},
+"Sketchfab_Scene_tree_006_wood_0": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 60.0,
+"lods/normal_split_angle": 25.0,
+"save_to_file/enabled": true,
+"save_to_file/path": "res://assets/hexagon_tiles_1/meshpaths/Sketchfab_Scene_tree_006_wood_0.res"
+}
+}
+}
+gltf/naming_version=1
+gltf/embedded_image_handling=1

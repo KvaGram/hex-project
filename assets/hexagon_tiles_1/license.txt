@@ -1,0 +1,11 @@
+Model Information:
+* title:	Hexagon Tiles
+* source:	https://sketchfab.com/3d-models/hexagon-tiles-b7e08551fbfa499ba2d336fbe8d1b553
+* author:	Paul.Egberts (https://sketchfab.com/Paul.Egberts)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Hexagon Tiles" (https://sketchfab.com/3d-models/hexagon-tiles-b7e08551fbfa499ba2d336fbe8d1b553) by Paul.Egberts (https://sketchfab.com/Paul.Egberts) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

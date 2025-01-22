@@ -1,0 +1,13 @@
+[gd_scene load_steps=3 format=3 uid="uid://woxp4hm8oqbm"]
+
+[ext_resource type="Script" path="res://testhex.gd" id="1_1f2w4"]
+[ext_resource type="Script" path="res://addons/freecam_3D/freecam.gd" id="3_5jl1a"]
+
+[node name="Node3D" type="Node3D"]
+script = ExtResource("1_1f2w4")
+
+[node name="Freecam3D" type="Camera3D" parent="."]
+script = ExtResource("3_5jl1a")
+
+[node name="OmniLight3D" type="OmniLight3D" parent="Freecam3D"]
+omni_range = 50.0
