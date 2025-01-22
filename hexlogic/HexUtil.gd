@@ -44,19 +44,27 @@ static func tile_index_to_QRS(ti:int) -> PackedInt32Array:
 	var segment: int = floor((ti-count) / layer) #segment of the layer (0 to 5)
 	var pos: int = (ti-count) % layer #segment posision
 
-	var q = get_dir(segment)[0] * layer + get_dir(segment+2)[0]*pos
-	var r = get_dir(segment)[1] * layer + get_dir(segment+2)[1]*pos
-	var s = get_dir(segment)[2] * layer + get_dir(segment+2)[2]*pos
-
-	return PackedInt32Array([q, r, s])
-
-func QRS_to_segposlayer(QRS:PackedInt32Array)->PackedInt32Array:
+	return segposlayer_to_QRS([segment, pos, layer])
+	#var q = get_dir(segment)[0] * layer + get_dir(segment+2)[0]*pos
+	#var r = get_dir(segment)[1] * layer + get_dir(segment+2)[1]*pos
+	#var s = get_dir(segment)[2] * layer + get_dir(segment+2)[2]*pos
+#
+	#return PackedInt32Array([q, r, s])
+static func segposlayer_to_QRS(spl:PackedInt32Array)->PackedInt32Array:
+	return PackedInt32Array([
+		get_dir(spl[0])[0] * spl[2] + get_dir(spl[0]+2)[0]*spl[1],
+		get_dir(spl[0])[1] * spl[2] + get_dir(spl[0]+2)[1]*spl[1],
+		get_dir(spl[0])[2] * spl[2] + get_dir(spl[0]+2)[2]*spl[1]
+	])
+static func QRS_to_segposlayer(QRS:PackedInt32Array)->PackedInt32Array:
 	var q:=QRS[0]
 	var r:=QRS[1]
 	var s:=QRS[2]
 	var seg:int
 	var pos:int
 	var layer:int =max(abs(q), abs(r), abs(s))
+	if layer == 0:
+		return PackedInt32Array([0, 0, 0])
 	#There is a borderland overlap at the segment starts.
 	#The ternary expressions takes on these edge cases.
 	if r == -layer:
@@ -79,14 +87,35 @@ func QRS_to_segposlayer(QRS:PackedInt32Array)->PackedInt32Array:
 		pos = -r if (r != -layer) else 0
 	return PackedInt32Array([seg, pos, layer])
 
-func chunk_to_global(cube_QRS:PackedInt32Array, layers:int)->PackedInt32Array:
-	var q:=0
-	var r:=0
-	var s:=0
+static func chunk_to_global(chunk_QRS:PackedInt32Array, layers:int)->PackedInt32Array:
+	var spl := QRS_to_segposlayer(chunk_QRS)
+	var chunk_seg:int =  spl[0]
+	var chunk_pos:int =  spl[1]
+	var chunk_layer:int= spl[2]
+
+	var offset1 = get_dir(chunk_seg-2)
+	var offset2 = get_dir(chunk_seg)
+	if chunk_layer == 0:
+		return PackedInt32Array([0,0,0])
+
+	var q = get_dir(chunk_seg)[0] * chunk_layer*(layers*2+1) + get_dir(chunk_seg+2)[0]*chunk_pos*(layers*2+1) + offset1[0] * layers*chunk_layer + offset2[0]*chunk_pos * (layers)
+	var r = get_dir(chunk_seg)[1] * chunk_layer*(layers*2+1) + get_dir(chunk_seg+2)[1]*chunk_pos*(layers*2+1) + offset1[1] * layers*chunk_layer + offset2[1]*chunk_pos * (layers)
+	var s = get_dir(chunk_seg)[2] * chunk_layer*(layers*2+1) + get_dir(chunk_seg+2)[2]*chunk_pos*(layers*2+1) + offset1[2] * layers*chunk_layer + offset2[2]*chunk_pos * (layers)
+
 	# Find sub-segment and segment posision
 	return PackedInt32Array([q,r,s])
 
 static func QRS_to_tile_index(qrs:PackedInt32Array) -> int:
+	var spl := QRS_to_segposlayer(qrs)
+	var layer = spl[2]
+	if layer == 0:
+		return 0
+	var seg = spl[0]
+	var pos = spl[1]
+	var count: int = 3 * layer * (layer - 1) + 1  # Count of tiles in all previous layers
+	return seg * layer + count + pos
+
+static func old_QRS_to_tile_index(qrs:PackedInt32Array) -> int:
 	var q:int = qrs[0]
 	var r:int = qrs[1]
 	var s:int = qrs[2]
@@ -120,6 +149,3 @@ static func QRS_to_tile_index(qrs:PackedInt32Array) -> int:
 		seg = 5
 		pos = -r
 	return seg * layer + count + pos
-
-
-	return 0
