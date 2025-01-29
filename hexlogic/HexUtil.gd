@@ -87,23 +87,61 @@ static func QRS_to_segposlayer(QRS:PackedInt32Array)->PackedInt32Array:
 		pos = -r if (r != -layer) else 0
 	return PackedInt32Array([seg, pos, layer])
 
-static func chunk_to_global(chunk_QRS:PackedInt32Array, layers:int)->PackedInt32Array:
+## calculates the global coordinates of a chunk's central tile from chunk coordinates.
+## code refracted by deepseek.
+static func chunk_to_global(chunk_QRS: PackedInt32Array, layers: int) -> PackedInt32Array:
+	# Handle the center chunk case
+	if chunk_QRS[0] == 0 and chunk_QRS[1] == 0 and chunk_QRS[2] == 0:
+		return PackedInt32Array([0, 0, 0])
+
+	# Convert chunk QRS to segment, position, and layer
 	var spl := QRS_to_segposlayer(chunk_QRS)
-	var chunk_seg:int =  spl[0]
-	var chunk_pos:int =  spl[1]
-	var chunk_layer:int= spl[2]
+	var chunk_seg: int = spl[0]
+	var chunk_pos: int = spl[1]
+	var chunk_layer: int = spl[2]
 
-	var offset1 = get_dir(chunk_seg-2)
-	var offset2 = get_dir(chunk_seg)
-	if chunk_layer == 0:
-		return PackedInt32Array([0,0,0])
+	# Get direction vectors for the chunk segment and its neighbors
+	var dir_seg: Array = get_dir(chunk_seg)
+	var dir_seg_plus_2: Array = get_dir(chunk_seg + 2)
+	var dir_seg_minus_2: Array = get_dir(chunk_seg - 2)
 
-	var q = get_dir(chunk_seg)[0] * chunk_layer*(layers*2+1) + get_dir(chunk_seg+2)[0]*chunk_pos*(layers*2+1) + offset1[0] * layers*chunk_layer + offset2[0]*chunk_pos * (layers)
-	var r = get_dir(chunk_seg)[1] * chunk_layer*(layers*2+1) + get_dir(chunk_seg+2)[1]*chunk_pos*(layers*2+1) + offset1[1] * layers*chunk_layer + offset2[1]*chunk_pos * (layers)
-	var s = get_dir(chunk_seg)[2] * chunk_layer*(layers*2+1) + get_dir(chunk_seg+2)[2]*chunk_pos*(layers*2+1) + offset1[2] * layers*chunk_layer + offset2[2]*chunk_pos * (layers)
+	# Precompute common terms
+	var layer_scale: int = layers * 2 + 1
+	var pos_scale: int = layers
 
-	# Find sub-segment and segment posision
-	return PackedInt32Array([q,r,s])
+	# Calculate the global QRS coordinates
+	var q: int = (
+		dir_seg[0] * chunk_layer * layer_scale +
+		dir_seg_plus_2[0] * chunk_pos * layer_scale +
+		dir_seg_minus_2[0] * layers * chunk_layer +
+		dir_seg[0] * chunk_pos * pos_scale
+	)
+
+	var r: int = (
+		dir_seg[1] * chunk_layer * layer_scale +
+		dir_seg_plus_2[1] * chunk_pos * layer_scale +
+		dir_seg_minus_2[1] * layers * chunk_layer +
+		dir_seg[1] * chunk_pos * pos_scale
+	)
+
+	var s: int = (
+		dir_seg[2] * chunk_layer * layer_scale +
+		dir_seg_plus_2[2] * chunk_pos * layer_scale +
+		dir_seg_minus_2[2] * layers * chunk_layer +
+		dir_seg[2] * chunk_pos * pos_scale
+	)
+
+	return PackedInt32Array([q, r, s])
+static func local_to_global_tile(local_tile_qrs:PackedInt32Array, chunk_qrs:PackedInt32Array, layers:int)->PackedInt32Array:
+	var chunk_global:PackedInt32Array = chunk_to_global(chunk_qrs, layers)
+	return PackedInt32Array([local_tile_qrs[0] + chunk_global[0], local_tile_qrs[1] + chunk_global[1], local_tile_qrs[2] + chunk_global[2]])
+static func global_to_local_tile(global_tile_qrs:PackedInt32Array, chunk_qrs:PackedInt32Array, layers:int)->PackedInt32Array:
+	var chunk_global:PackedInt32Array = chunk_to_global(chunk_qrs, layers)
+	return PackedInt32Array([global_tile_qrs[0] - chunk_global[0], global_tile_qrs[1] - chunk_global[1], global_tile_qrs[2] - chunk_global[2]])
+static func tile_to_other_chunk(local_tile_qrs:PackedInt32Array, origin_chunk_qrs:PackedInt32Array, target_chunk_qrs:PackedInt32Array, layers:int)->PackedInt32Array:
+	var chunk_global_origin:PackedInt32Array = chunk_to_global(origin_chunk_qrs, layers)
+	var chunk_global_target:PackedInt32Array = chunk_to_global(target_chunk_qrs, layers)
+	return PackedInt32Array([local_tile_qrs[0]+chunk_global_origin[0]-chunk_global_target[0],local_tile_qrs[1]+chunk_global_origin[1]-chunk_global_target[1],local_tile_qrs[2]+chunk_global_origin[2]-chunk_global_target[2]])
 
 static func QRS_to_tile_index(qrs:PackedInt32Array) -> int:
 	var spl := QRS_to_segposlayer(qrs)

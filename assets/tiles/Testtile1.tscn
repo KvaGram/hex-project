@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3 uid="uid://0mqlfnlnl5j7"]
+[gd_scene load_steps=9 format=3 uid="uid://0mqlfnlnl5j7"]
 
 [ext_resource type="ArrayMesh" uid="uid://brituqunvslfg" path="res://assets/hexagon_tiles_1/meshpaths/Sketchfab_Scene_sea_003_darkGreen_0.res" id="1_0docq"]
 [ext_resource type="ArrayMesh" uid="uid://bdid2r4qptaku" path="res://assets/hexagon_tiles_1/meshpaths/Sketchfab_Scene_Landscape_023_darkGreen_0.res" id="2_mvnc2"]
@@ -34,11 +34,18 @@ var ti:
 	set(value): %TI_val.text = value
 "
 
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_lf5ap"]
+height = 0.2
+radius = 0.9
+
 [sub_resource type="BoxMesh" id="BoxMesh_pon3v"]
 size = Vector3(0.005, 0.02, 0.8)
 
 [node name="Testtile1" type="Node3D"]
 script = SubResource("GDScript_n1yqk")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("CylinderShape3D_lf5ap")
 
 [node name="sea_003" type="Node3D" parent="."]
 
