@@ -143,7 +143,7 @@ func checkNeighbors(tile_layers:int, chunk_q:int, chunk_r:int, q:int, r:int):
 		#3 apply direction to get neighbour
 
 		#If neighbor is within chunk borders, skip to next.
-		if (nq>tile_layers or nr>tile_layers or ns>tile_layers):
+		if (abs(nq)>tile_layers or abs(nr)>tile_layers or abs(ns)>tile_layers):
 			var n_global := HexUtil.chunk_to_global(PackedInt32Array([chunk_q, chunk_r, chunk_s]), tile_layers)
 			n_global[0]+=nq; n_global[1]+=nr; n_global[2]+=ns
 			var n_dir:int = -1
@@ -155,66 +155,11 @@ func checkNeighbors(tile_layers:int, chunk_q:int, chunk_r:int, q:int, r:int):
 				4: n_dir= d if s <= 0 else d+1
 				5: n_dir= d if r >= 0 else d+1
 			ncq += HexUtil.get_dir(n_dir)[0]
-			ncq += HexUtil.get_dir(n_dir)[1]
-			ncq += HexUtil.get_dir(n_dir)[2]
-			# For each direction, only two options exist. How to find which one.
-			#      if neighbor direction equals 0, and q is less or equal to 0, chunk is direction 0, otherwise 1
-			# else if neighbor direction equals 1, and s is greater or equal to 0, chunk is direction 1, otherwise 2
-			# else if neighbor direction equals 2, and r is less or equal to 0, chunk is direction 2, otherwise 3
-			# else if neighbor direction equals 3, and q is greater or equal to 0, chunk is direction 3, otherwise 4
-			# else if neighbor direction equals 4, and s is less or equal to 0, chunk is direction 4, otherwise 5
-			# else if neighbor direction equals 5, and r is greater or equal to 0, chunk is direction 5, otherwise 0
-
-
-			#proposed by chatgpt. divide by layers to get chunk layer. Failed
-			#ncq = floori(n_global[0]/tile_layers)
-			#ncr = floori(n_global[1]/tile_layers)
-			#ncs = floori(n_global[2]/tile_layers)
-
-#
-#
-			#if nq > tile_layers:
-				#ncq += 1
-				#if nr < 0 and nr > -tile_layers:
-					#ncr -= 1
-				#elif ns < 0 and ns > -tile_layers:
-					#ncs -= 1
-			#elif nq < -tile_layers:
-				#ncq -= 1
-				#if nr > 0 and nr < tile_layers:
-					#ncr += 1
-				#elif ns > 0 and ns < tile_layers:
-					#ncs += 1
-#
-			#if nr > tile_layers:
-				#ncr += 1
-				#if nq < 0 and nq > -tile_layers:
-					#ncq -= 1
-				#elif ns < 0 and ns > -tile_layers:
-					#ncs -= 1
-			#elif nr < -tile_layers:
-				#ncr -= 1
-				#if nq > 0 and nq < tile_layers:
-					#ncq += 1
-				#elif ns > 0 and ns < tile_layers:
-					#ncs += 1
-#
-			#if ns > tile_layers:
-				#ncs += 1
-				#if nr < 0 and nr > -tile_layers:
-					#ncr -= 1
-				#elif nq < 0 and nq > -tile_layers:
-					#ncq -= 1
-			#elif ns < -tile_layers:
-				#ncs -= 1
-				#if nr > 0 and nr < tile_layers:
-					#ncr += 1
-				#elif nq > 0 and nq < tile_layers:
-					#ncq += 1
+			ncr += HexUtil.get_dir(n_dir)[1]
+			ncs += HexUtil.get_dir(n_dir)[2]
 			if(ncq + ncr + ncs) != 0:
 				printerr("Bad chunk coodinates")
 			var n_qrs = HexUtil.tile_to_other_chunk(PackedInt32Array([nq, nr, ns]),PackedInt32Array([chunk_q, chunk_r, chunk_s]),PackedInt32Array([ncq, ncr, ncs]), tile_layers)
-			#TODO: continue here. Local coods are VERY wrong. Neighbour chunks is wrong.
 			nq = n_qrs[0]
 			nr = n_qrs[1]
 			ns = n_qrs[2]
