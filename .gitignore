@@ -1,3 +1,5 @@
 # Godot 4+ specific ignores
 .godot/
 /android/
+hex-extention/.sconsign.dblite
+/hex-extention/build
