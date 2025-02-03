@@ -16,12 +16,20 @@ public:
     HexQRS(int q, int r);
     HexQRS(int q, int r, int s);
 	~HexQRS();
+    int get_q();
+    int get_r();
     int get_s();
+    void set_q(int _q);
+    void set_r(int _r);
     HexQRS add(HexQRS other);
-    HexQRS add(HexQRS other, int times);
+    HexQRS addm(HexQRS other, int times);
     HexQRS sub(HexQRS other);
-    HexQRS sub(HexQRS other, int times);
+    HexQRS subm(HexQRS other, int times);
     HexQRS* copy();
+    static HexQRS* GET_D(int value);
+
+    //static HexQRS* from_LSP(HexLSP other)
+    static HexQRS* FROM_SPIRAL_INDEX(uint index);
 };
 }
 #endif
