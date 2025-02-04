@@ -29,7 +29,7 @@ public:
     static HexQRS* GET_D(int value);
 
     //static HexQRS* from_LSP(HexLSP other)
-    static HexQRS* FROM_SPIRAL_INDEX(uint index);
+    static HexQRS* FROM_SPIRAL_INDEX(int index);
 };
 }
 #endif

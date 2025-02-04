@@ -21,7 +21,7 @@ debug_console="*res://addons/copper_dc/debug_console.tscn"
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/copper_dc/plugin.cfg", "res://addons/freecam_3D/plugin.cfg")
+enabled=PackedStringArray("res://addons/copper_dc/plugin.cfg")
 
 [input]
 
