@@ -1,7 +1,8 @@
 #include "HexQRS.h"
 #include <godot_cpp/core/object.hpp>
 #include <godot_cpp/core/class_db.hpp>
-
+#include <cmath>
+using namespace std;
 using namespace godot;
 
 void HexQRS::_bind_methods() {
@@ -72,7 +73,12 @@ HexQRS HexQRS::subm(HexQRS other, int times) {
     ret.r = r - other.r*times;
     return ret;
 }
-HexQRS* HexQRS::copy() {
+int godot::HexQRS::get_layer()
+{
+    return max(abs(get_s()), max(abs(q), abs(r)));
+}
+HexQRS *HexQRS::copy()
+{
     return new HexQRS(q, r);
 }
 HexQRS* HexQRS::GET_D(int value){
@@ -99,12 +105,14 @@ HexQRS* HexQRS::GET_D(int value){
     return new HexQRS(0,0);
 }
 
-HexQRS* HexQRS::FROM_SPIRAL_INDEX(uint index){
-    int q, r;
-    if (index <= 0)
-        return new HexQRS(0, 0);
-    
-    HexQRS* ret = new HexQRS();
+HexQRS *godot::HexQRS::FROM_SPIRAL_INDEX(int index)
+{
+    return FROM_LSP(HexLSP::FROM_SPIRAL_INDEX(index));
+}
 
+HexQRS *godot::HexQRS::FROM_LSP(HexLSP *other)
+{
+    HexQRS* ret = new HexQRS();
+    ret->addm(*GET_D(other->segment), other->layer).addm(*GET_D(other->segment+2), other->posision);
     return ret;
 }

@@ -1,5 +1,7 @@
 {
     "files.associations": {
-        "random": "cpp"
-    }
+        "random": "cpp",
+        "new": "cpp"
+    },
+    "godotTools.editorPath.godot4": "c:\\Users\\Grambo\\Documents\\Programmer\\Godot_v4.3-stable_win64.exe"
 }
