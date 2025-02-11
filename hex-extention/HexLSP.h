@@ -1,7 +1,7 @@
-#ifndef HEX_LSP_H;
-#define HEX_LSP_H;
-#include <HexQRS.h>;
-#include <godot_cpp/classes/object.hpp>;
+#ifndef HEX_LSP_H
+#define HEX_LSP_H
+#include "HexQRS.h";
+#include "object.hpp";
 namespace godot {
 /* HexLSP - Hexagon layer, segment, posision
 This is a local coordinate system defining the location of a hexagon tile in relation to a defined center.

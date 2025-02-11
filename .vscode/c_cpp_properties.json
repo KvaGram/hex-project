@@ -4,7 +4,9 @@
             "name": "Win32",
             "includePath": [
                 "${workspaceFolder}/**",
-                "${workspaceFolder}/hex-extention"
+                "${workspaceFolder}/hex-extention",
+                "${workspaceFolder}/godot_cpp",
+                "${workspaceFolder}/godot_cpp/classes"
             ],
             "defines": [
                 "_DEBUG",

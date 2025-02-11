@@ -1,6 +1,6 @@
 #include "HexQRS.h"
-#include <godot_cpp/core/object.hpp>
-#include <godot_cpp/core/class_db.hpp>
+#include "object.hpp"
+#include "godot-cpp/include/godot_cpp/core/class_db.hpp"
 #include <cmath>
 using namespace std;
 using namespace godot;

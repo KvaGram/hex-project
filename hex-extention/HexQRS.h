@@ -1,7 +1,8 @@
 #ifndef HEX_QRS_H
 #define HEX_QRS_H
-#include <godot_cpp/classes/object.hpp>
-#include <HexLSP.h>
+
+#include "object.hpp"
+#include "HexLSP.h"
 namespace godot {
 class HexQRS : public Object {
     GDCLASS(HexQRS, Object)
