@@ -5,3 +5,4 @@ hex-extention/.sconsign.dblite
 /hex-extention/build
 /hex-project/build
 /rust-extention/kva_hex_core/target
+/godot_cpp
