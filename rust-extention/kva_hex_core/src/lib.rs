@@ -4,12 +4,12 @@ pub mod direction{
     use super::*;
     pub const DIRECTIONS: [Hex<i8>; 12] = [
         // flat-side directions (neighbors)
+        Hex {q: 0,r:-1},
         Hex {q: 1,r:-1},
         Hex {q: 1,r: 0},
         Hex {q: 0,r: 1},
         Hex {q:-1,r: 1},
         Hex {q:-1,r: 0},
-        Hex {q: 0,r:-1},
         // pointy directions (neibour of neighbor)
         Hex { q: 1, r: -2 },
         Hex { q: 2, r: -1 },
@@ -28,6 +28,8 @@ pub mod direction{
     impl NotI8 for f32 {}
     impl NotI8 for f64 {}
 
+    /// Converts Hex<i8>, which is used for directions and other short values of Hex into other signed primitive implementations of Hex.
+    /// Conversion From i8 is expected to always work, as i8 is the smallest signed primitive number.
     impl<T> From<Hex<i8>> for Hex<T> 
     where T: NotI8 + From<i8>{
         fn from(hex: Hex<i8>) -> Self {
@@ -37,6 +39,32 @@ pub mod direction{
             }
         }
     }
+
+        ///Special trait used to allow broad implemtation of TryFrom<Hex<i32>> on common signed rational numbers.
+        trait NotI32 {}
+        impl NotI32 for i8 {}
+        impl NotI32 for i16 {}
+        impl NotI32 for i64 {}
+        impl NotI32 for i128 {}
+        impl NotI32 for isize {}
+        impl NotI32 for f32 {}
+        impl NotI32 for f64 {}
+
+        /// Tries to convert Hex<i32>, the default implementation, to any other signed primitive implementation of Hex.
+        /// Conversion fail for i16, i8 or f32. Conversions for those should implement error handling for those.
+        /// Conversions into larger values should pass, and could be safly unwrapped.
+        impl<T> TryFrom<Hex<i32>> for Hex<T>
+            where T: NotI32 + TryFrom<i32> {
+                type Error = ();
+            
+                fn try_from(value: Hex<i32>) -> Result<Self, Self::Error> {
+                    Ok(Hex {
+                        q: T::try_from(value.q).map_err(|_| ())?,
+                        r: T::try_from(value.r).map_err(|_| ())?,
+                    })
+            }
+        }
+
     /// Directions for a hexagon oriented with a pointy north.
     /// First six directions are flat-side directions, with immidiate neibors.
     /// Final six directions are pointy-side directions with indirect neibors.
@@ -108,15 +136,15 @@ pub mod direction{
     }
     pub fn get_dir_all(d:i32)->Hex<i8> {
         let mut d = d;
-        while d > 12{d -= 12}
-        while d < 0 {d += 12}
+        while d >= 12{d -= 12}
+        while d <  0 {d += 12}
         let d:usize = usize::try_from(d).expect("d should be wrapped to range (0 .. 12)");
         return DIRECTIONS[d];
     }
     pub fn get_dir(d:i32)->Hex<i8> {
         let mut d = d;
-        while d > 6 {d -= 6}
-        while d < 0 {d += 6}
+        while d >= 6 {d -= 6}
+        while d <  0 {d += 6}
         let d:usize = usize::try_from(d).expect("d should be wrapped to range (0 .. 6)");
         return DIRECTIONS[d];
     }
@@ -187,57 +215,89 @@ impl<T, U> std::ops::Mul<U> for Hex<T>
 
 pub mod spiral
 {
-    use std::fmt::Error;
+    use std::fmt::Display;
 
     use num::{integer::Roots, ToPrimitive};
-
     use crate::direction::get_dir;
 
     use super::*;
-    pub fn spiral_index_to_hex(index:usize)->Hex<i32>{
-        let index = index.to_i32()
-            .expect("Index:usize expected be less than limit of i32");
+    impl<T> TryFrom<Spiral> for Hex<T>
+    where T:Signed + Ord + TryFrom<i32> + Copy + From<Hex<i32>>{
+        type Error = T::Error;
+    
+        fn try_from(value: Spiral) -> Result<Self, Self::Error> {
+            let hexi32 = spiral_to_hex(value);
+            Ok(Hex {
+                q: T::try_from(hexi32.q)?,
+                r: T::try_from(hexi32.r)?,
+            })
+        }
+    }
+    impl<T> TryFrom<Hex<T>> for Spiral
+    where T:Signed + Ord + TryInto<i32> + Copy + Display{
+        type Error = ();
+    
+        fn try_from(value: Hex<T>) -> Result<Self, Self::Error> {
+            let tryconvert = hex_to_spiral(value);
+            match tryconvert{
+                Err(_) => Err(()),
+                Ok(val) => Ok(val),
+            }
+        }
+    }
+    impl From<usize> for Spiral {
+        fn from(value: usize) -> Self {
+            let value = value.to_i32()
+                .expect("Index:usize expected be less than limit of i32");
+            let mut spiral = Spiral{layer:0, posision:0};
+            if value <= 0 {return spiral;} //index 0 is the origin/center tile.
+
+            //Layer around the origin tile.
+            spiral.layer = (((12 * value + 9).sqrt() - 3) as f32 /6.0).ceil().to_i32()
+                .expect("spiral.layer as f32 is now expected to be above 0 and rounded up to nearest integer.");
+            
+            //The tile's index, minus number of tiles before this layer.
+            spiral.posision = value - (3 * spiral.layer * (spiral.layer - 1) + 1);
+            return spiral;
+        }
+    }
+
+    pub fn spiral_index_to_hex(index:usize)->Hex<i32> {
         if index <= 0 {
             return Hex{q:0, r:0};
         }
-
-
-        let mut spiral = Spiral{layer:0, posision:0};
-        //Layer around the origin tile.
-        spiral.layer = (((12 * index + 9).sqrt() - 3) as f32 /6.0).ceil().to_i32()
-            .expect("spiral.layer as f32 is now expected to be above 0 and rounded up to nearest integer.");
-        //The tile's index, minus tumber of tiles before this layer.
-        spiral.posision = index - (3 * spiral.layer * (spiral.layer - 1) + 1);
-
+        spiral_to_hex(Spiral::from(index))
+    }
+    pub fn spiral_to_hex(spiral:Spiral)->Hex<i32> {
+        //hex direction from center tile to segment start
         let d1:Hex<i32> = get_dir(spiral.segment()).into();
-        let d2:Hex<i32> = get_dir(spiral.segment()).into();
+        //Hex direction following segment positive direction
+        let d2:Hex<i32> = get_dir(spiral.segment()+2).into();
         d1 * spiral.layer + d2 * (spiral.posision % spiral.layer)
-
-/*	var count: int = 3 * layer * (layer - 1) + 1  # Count of tiles in all previous layers
-
-	#clockwise posision arond the layer circle, defined with segment then clockwise position from segment orign
-	var segment: int = floor((ti-count) / layer) #segment of the layer (0 to 5)
-	var pos: int = (ti-count) % layer #segment posision
-
-	return segposlayer_to_QRS([segment, pos, layer])
-	#var q = get_dir(segment)[0] * layer + get_dir(segment+2)[0]*pos
-	#var r = get_dir(segment)[1] * layer + get_dir(segment+2)[1]*pos
-	#var s = get_dir(segment)[2] * layer + get_dir(segment+2)[2]*pos */
-
     }
     pub fn hex_to_spiral<T>(hex:Hex<T>)->Result<Spiral, T::Error>
-    where T:Signed + Ord + TryInto<i32> + Copy{
+    where T:Signed + Ord + TryInto<i32> + Copy + Display{
         use std::cmp::max;
         let mut spiral = Spiral{layer:0, posision:0};
+        ////TEST - PLEASE REMOVE
+        println!("pub fn hex_to_spiral<T>(hex(q{}, r{}))", hex.q, hex.r);
         spiral.layer = (max(hex.q.abs(), max(hex.r.abs(), hex.s().abs()))).try_into()?;
         if spiral.layer <= 0{
-            return spiral;
+            return Ok(spiral);
         }
         let q:i32 = hex.q.try_into()?;
         let r:i32 = hex.r.try_into()?;
         let s:i32 = hex.s().try_into()?;
         let l = spiral.layer;
 
+        //Calculate posision.
+        //One of these arms is guarteed to trigger.
+        //except for center tile, which is handled above.
+        //finding which coordinate equals layer or negative layer
+        //lets us know which "segment" of the layer this tile is on.
+        //It also lets us know what coordinate to count from to find the segment-position.
+        //The stored posision value is thus this segment-posision plus
+        //the length of a segment (same as layer) multiplied by the segment.
         if        r == -l {
             spiral.posision =  q + l * 0;
         } else if q ==  l {
@@ -245,7 +305,7 @@ pub mod spiral
         } else if s == -l {
             spiral.posision =  r + l * 2;
         } else if r ==  l {
-            spiral.posision = -r + l * 3;
+            spiral.posision = -q + l * 3;
         } else if q == -l {
             spiral.posision =  s + l * 4;
         } else if s ==  l {
@@ -254,14 +314,20 @@ pub mod spiral
 
         return Ok(spiral);
     }
-    pub fn hex_to_spiral_index<T>(hex:Hex<T>)->Result<usize,T::Error>
-    where T:Signed + Ord + TryInto<i32> + Copy{
-        let spiral = hex_to_spiral(hex)?;
+    pub fn hex_to_spiral_index<T>(hex:Hex<T>)->usize
+    where T:Signed + Ord + TryInto<i32> + Copy + Display{
+        let tryspiral = hex_to_spiral(hex);
+        let spiral;
+        match tryspiral {
+            Ok(val) => spiral = val,
+            Err(_) => panic!("Hex may have too extreme values! (out of range for usize)"),
+        }
         if spiral.layer <= 0{
-            return Ok(0);
+            return 0;
         }
         //deconstruct layer to number of tiles before layer. Add posision. There's the index.
-        let index: Result<usize, Error> = (3 * spiral.layer * (spiral.layer - 1) + 1 + spiral.posision).try_into();
+        let index:usize = (3 * spiral.layer * (spiral.layer - 1) + 1 + spiral.posision).try_into()
+            .expect("Value always positive and less than limit of usize");
         return index;
     }
     
@@ -285,34 +351,27 @@ pub mod spiral
 
 #[cfg(test)]
 mod tests {
-    //use super::*;
-    // #[test]
-    // fn array_of_hexagons() {
-    //     let hexes = [Hex{q:0,r:0}, Hex{q:1,r:0}];
-    // }
-
-/*	print("Testing ti to QRS")
-	test_ti_to_qrs(0, 0, 0, 0)
-	test_ti_to_qrs(1, 0, -1, 1)
-	test_ti_to_qrs(8, 1, -2, 1)
-	test_ti_to_qrs(11, 2, 0, -2)
-	test_ti_to_qrs(30, -2, 3, -1)
-	test_ti_to_qrs(48, 1, 3, -4)
-	test_ti_to_qrs(49, 0, 4, -4)
-	test_ti_to_qrs(84, -5, 2, 3)
-	print("testing QRS to ti")
-	test_qrs_to_ti(0, 0, 0, 0)
-	test_qrs_to_ti(1, 0, -1, 1)
-	test_qrs_to_ti(8, 1, -2, 1)
-	test_qrs_to_ti(11, 2, 0, -2)
-	test_qrs_to_ti(30, -2, 3, -1)
-	test_qrs_to_ti(48, 1, 3, -4)
-	test_qrs_to_ti(49, 0, 4, -4)
-	test_qrs_to_ti(84, -5, 2, 3) */
-
-    // #[test]
-    // fn it_works() {
-    //     let result = add(2, 2);
-    //     assert_eq!(result, 4);
-    // }
+    use super::*;
+    #[test]
+    fn spiral_indicies_to_hex() {
+        assert_eq!(spiral::spiral_index_to_hex(0), Hex { q: 0, r: 0 });
+        assert_eq!(spiral::spiral_index_to_hex(1), Hex { q: 0, r: -1 });
+        assert_eq!(spiral::spiral_index_to_hex(8), Hex { q: 1, r: -2 });
+        assert_eq!(spiral::spiral_index_to_hex(11), Hex { q: 2, r: 0 });
+        assert_eq!(spiral::spiral_index_to_hex(30), Hex { q: -2, r: 3 });
+        assert_eq!(spiral::spiral_index_to_hex(48), Hex { q: 1, r: 3 });
+        assert_eq!(spiral::spiral_index_to_hex(49), Hex { q: 0, r: 4 });
+        assert_eq!(spiral::spiral_index_to_hex(84), Hex { q: -5, r: 2 });
+    }
+    #[test]
+    fn hex_to_spiral_indicies() {
+        assert_eq!(0, spiral::hex_to_spiral_index( Hex { q: 0, r: 0 }));
+        assert_eq!(1, spiral::hex_to_spiral_index( Hex { q: 0, r: -1 }));
+        assert_eq!(8, spiral::hex_to_spiral_index( Hex { q: 1, r: -2 }));
+        assert_eq!(11, spiral::hex_to_spiral_index( Hex { q: 2, r: 0 }));
+        assert_eq!(30, spiral::hex_to_spiral_index( Hex { q: -2, r: 3 }));
+        assert_eq!(48, spiral::hex_to_spiral_index( Hex { q: 1, r: 3 }));
+        assert_eq!(49, spiral::hex_to_spiral_index( Hex { q: 0, r: 4 }));
+        assert_eq!(84, spiral::hex_to_spiral_index( Hex { q: -5, r: 2 }));
+    }
 }
