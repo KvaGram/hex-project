@@ -1,5 +1,6 @@
 use num::Signed;
 
+const TAU:f64 = 6.2831853071;
 pub mod direction{
     use super::*;
     pub const DIRECTIONS: [Hex<i8>; 12] = [
@@ -347,8 +348,31 @@ pub mod spiral
             }
             self.posision/self.layer
         }
-        pub fn s_posision(self)->i32{
+        pub fn s_posision(&self)->i32{
             self.posision % self.layer
+        }
+        pub fn layer_len(&self)->i32{
+            self.layer*6
+        }
+        /// changes the Spiral posision by steps, and wraps the result.
+        pub fn rotate_tiles(&mut self, steps:i32){
+            self.posision += steps;
+            while self.posision < 0 {
+                self.posision += self.layer_len();
+            } while self.posision >= self.layer_len() {
+                self.posision -= self.layer_len();
+            }
+        }
+        /// Changes the posision by one edge og the hexagon
+        pub fn rotate_hex(&mut self, seg_steps:i32){
+            self.rotate_tiles(seg_steps*self.layer);
+        }
+        pub fn radians_to_steps(self, r:f64)->i32 {
+            let steps:f64 = self.layer as f64*6.0 * r/TAU;
+            return steps as i32;
+        }
+        pub fn rotate_radians(&mut self, r:f64){
+            self.rotate_tiles(self.radians_to_steps(r));
         }
     }
 }
