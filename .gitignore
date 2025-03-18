@@ -7,3 +7,4 @@ hex-extention/.sconsign.dblite
 /rust-extention/kva_hex_core/target
 /godot_cpp
 /rust-extention/kva_hex_core/.debug
+/rust-extention/godot_kva_hex_core/target
