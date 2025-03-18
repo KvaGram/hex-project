@@ -1,0 +1,7 @@
+[package]
+name = "godot_kva_hex_core"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+kva_hex_core = { path = "../kva_hex_core" }
