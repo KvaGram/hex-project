@@ -279,8 +279,6 @@ pub mod spiral
     where T:Signed + Ord + TryInto<i32> + Copy + Display{
         use std::cmp::max;
         let mut spiral = Spiral{layer:0, posision:0};
-        ////TEST - PLEASE REMOVE
-        println!("pub fn hex_to_spiral<T>(hex(q{}, r{}))", hex.q, hex.r);
         spiral.layer = (max(hex.q.abs(), max(hex.r.abs(), hex.s().abs()))).try_into()?;
         if spiral.layer <= 0{
             return Ok(spiral);
@@ -289,28 +287,34 @@ pub mod spiral
         let r:i32 = hex.r.try_into()?;
         let s:i32 = hex.s().try_into()?;
         let l = spiral.layer;
-
-        //Calculate posision.
-        //One of these arms is guarteed to trigger.
-        //except for center tile, which is handled above.
-        //finding which coordinate equals layer or negative layer
-        //lets us know which "segment" of the layer this tile is on.
-        //It also lets us know what coordinate to count from to find the segment-position.
-        //The stored posision value is thus this segment-posision plus
-        //the length of a segment (same as layer) multiplied by the segment.
-        if        r == -l {
-            spiral.posision =  q + l * 0;
-        } else if q ==  l {
-            spiral.posision = -s + l * 1;
-        } else if s == -l {
-            spiral.posision =  r + l * 2;
-        } else if r ==  l {
-            spiral.posision = -q + l * 3;
-        } else if q == -l {
-            spiral.posision =  s + l * 4;
-        } else if s ==  l {
-            spiral.posision = -r + l * 5;
-        }
+        
+        // Determine the segment index (0-5) and the position within that segment (segpos).
+        // This is based on which coordinate equals either `layer` (l) or `-layer` (-l), which always happens for one coordinate.
+        // In "corner" cases where two coordinates match `layer` and `-layer` respectively, either match could be used.
+        //      In a corner, the third coordinate always equal 0.
+        //      The first matching case is selected, but both produce the same position value.
+        let (segment, segpos) =
+        {  
+            if        r == -l {
+                (0, q)
+            } else if q ==  l {
+                (1, -s)
+            } else if s == -l {
+                (2, r)
+            } else if r ==  l {
+                (3, -q)
+            } else if q == -l {
+                (4, s)
+            } else if s ==  l {
+                (5, -r)
+            } else {
+                unreachable!("One of the q, r, s coordinates must be equal to `layer` or `-layer`")
+            }
+        };
+        // The final spiral position is calculated as:
+        // segment length (l) * segment index + segment position within that segment.
+        // the segment length is equal to the layer. Segments grow by one tile per layer.
+        spiral.posision = l * segment + segpos;
 
         return Ok(spiral);
     }
