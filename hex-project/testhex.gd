@@ -4,6 +4,10 @@ var orient:HexUtil.TileOrient = HexUtil.TileOrient.FLAT
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
+	var test:SpiralHexGrid = SpiralHexGrid.new();
+	var verts:PackedVector3Array = test.testDrawHex(7, true);
+	print(verts);
+	
 	var testscenes:Array[PackedScene] = [
 		load("res://assets/tiles/Testtile1.tscn"),
 		load("res://assets/tiles/Testtile2.tscn"),
