@@ -1,4 +1,4 @@
-use num::Signed;
+use num::{Signed, ToPrimitive};
 
 const TAU:f64 = 6.2831853071;
 pub mod direction{
@@ -167,19 +167,34 @@ pub struct Hex<T> {
     pub r:T
 }
 impl<T> Hex<T> where 
-T: Signed + Copy {
+T: Signed + Copy + ToPrimitive{
     /// the s coordinate.
-    pub fn s(self) -> T {-self.q - self.r}
-
-    // pub fn try_convert<U>(self) -> Result<Hex<T>, U::Error>
-    //     where T: TryFrom<U>+Copy
-    // {
-    //     Ok(Hex {
-    //         q: self.q.try_into()?,
-    //         r: self.r.try_into()?,
-    //     })
-    // }
+    pub fn s(&self) -> T {-self.q - self.r}
+    pub fn to_xy(&self, flat:bool) -> (f32,f32) {
+        let q = self.q.to_f32().expect("Failed converting q to f32");
+        let r = self.r.to_f32().expect("Failed converting r to f32");
+        if flat{
+            (
+                // X = (     3./2 * hex.q                    )
+                3.0/2.0 * q,
+                3f32.sqrt()/2.0 * q + 3f32.sqrt() * r
+                // Y = (sqrt(3)/2 * hex.q  +  sqrt(3) * hex.r)
+            )
+        }
+        else {
+            (
+                // X = (sqrt(3) * hex.q  +  sqrt(3)/2 * hex.r)
+                3f32.sqrt() * q + 3f32.sqrt()/2f32 * r ,
+                // Y = (                         3./2 * hex.r)
+                3.0/2.0 * r
+            )
+        }
+    }
 }
+// impl <T> Hex<T> where 
+// T: Signed + Copy + TryInto<f64> {
+    
+// }
 ///addition for hexagon coordinates
 impl<T> std::ops::Add for Hex<T> where 
 T: Signed + Copy {
@@ -216,7 +231,7 @@ impl<T, U> std::ops::Mul<U> for Hex<T>
 
 pub mod spiral
 {
-    use std::fmt::Display;
+    use std::{fmt::Display, io::Error};
 
     use num::{integer::Roots, ToPrimitive};
     use crate::direction::get_dir;
@@ -235,7 +250,7 @@ pub mod spiral
         }
     }
     impl<T> TryFrom<Hex<T>> for Spiral
-    where T:Signed + Ord + TryInto<i32> + Copy + Display{
+    where T:Signed + Ord + ToPrimitive + Copy + Display{
         type Error = ();
     
         fn try_from(value: Hex<T>) -> Result<Self, Self::Error> {
@@ -276,17 +291,19 @@ pub mod spiral
         let d2:Hex<i32> = get_dir(spiral.segment()+2).into();
         d1 * spiral.layer + d2 * (spiral.posision % spiral.layer)
     }
-    pub fn hex_to_spiral<T>(hex:Hex<T>)->Result<Spiral, T::Error>
-    where T:Signed + Ord + TryInto<i32> + Copy + Display{
+    pub fn hex_to_spiral<T>(hex:Hex<T>)->Result<Spiral, ()>
+    where T:Signed + Ord + ToPrimitive + Copy + Display
+    {
         use std::cmp::max;
         let mut spiral = Spiral{layer:0, posision:0};
-        spiral.layer = (max(hex.q.abs(), max(hex.r.abs(), hex.s().abs()))).try_into()?;
+        spiral.layer = (max(hex.q.abs(), max(hex.r.abs(), hex.s().abs())))
+            .to_i32().ok_or(())?;
         if spiral.layer <= 0{
             return Ok(spiral);
         }
-        let q:i32 = hex.q.try_into()?;
-        let r:i32 = hex.r.try_into()?;
-        let s:i32 = hex.s().try_into()?;
+        let q:i32 = hex.q.to_i32().ok_or(())?;
+        let r:i32 = hex.r.to_i32().ok_or(())?;
+        let s:i32 = hex.s().to_i32().ok_or(())?;
         let l = spiral.layer;
         
         // Determine the segment index (0-5) and the position within that segment (segpos).
@@ -320,7 +337,7 @@ pub mod spiral
         return Ok(spiral);
     }
     pub fn hex_to_spiral_index<T>(hex:Hex<T>)->usize
-    where T:Signed + Ord + TryInto<i32> + Copy + Display{
+    where T:Signed + Ord + ToPrimitive + Copy + Display{
         let tryspiral = hex_to_spiral(hex);
         let spiral;
         match tryspiral {
