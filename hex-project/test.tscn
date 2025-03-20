@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3 uid="uid://woxp4hm8oqbm"]
 
-[ext_resource type="Script" path="res://testhex.gd" id="1_1f2w4"]
-[ext_resource type="Script" path="res://addons/freecam_3D/freecam.gd" id="3_5jl1a"]
+[ext_resource type="Script" uid="uid://b1tpk4a3k3n2s" path="res://testhex.gd" id="1_1f2w4"]
+[ext_resource type="Script" uid="uid://cryti4gjqn6ha" path="res://addons/freecam_3D/freecam.gd" id="3_5jl1a"]
 
 [node name="Node3D" type="Node3D"]
 script = ExtResource("1_1f2w4")

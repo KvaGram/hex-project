@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://5p1jl3sk7g7h"]
 
-[ext_resource type="Script" path="res://qrs_selection_box.gd" id="1_rkb47"]
+[ext_resource type="Script" uid="uid://dls6r846r4riu" path="res://qrs_selection_box.gd" id="1_rkb47"]
 
 [node name="selection_box" type="Node3D"]
 transform = Transform3D(0.866025, 0.5, 2.18557e-08, 0, -4.37114e-08, 1, 0.5, -0.866025, -3.78552e-08, 0, 0.3, 0)
