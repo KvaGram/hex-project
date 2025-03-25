@@ -1,3 +1,4 @@
+use godot::classes::Image;
 use godot::prelude::*;
 use kva_hex_core::Hex;
 use kva_hex_core::spiral;
@@ -46,7 +47,18 @@ impl IRefCounted for SpiralHexGrid {
 #[godot_api]
 impl SpiralHexGrid {
     #[func]
-    pub fn testDrawHex(&self, count:i32, flat:bool) ->PackedVector3Array {
+    pub fn fromHighmap(&mut self, layers:i32, map:Image) {
+        let size = (3 * layers * (layers - 1) + 1) as usize;
+        let x_scale:u16;
+        let y_scale:u16;
+
+        
+    }
+}
+#[godot_api]
+impl SpiralHexGrid {
+    #[func]
+    pub fn testDrawHex(&self, count:i32, flat:bool) -> PackedVector3Array {
         if count <= 0 {
             panic!("Can't draw imaginary hexagons");
         }
@@ -95,9 +107,9 @@ impl SpiralHexGrid {
     }
 }
 
-
+#[derive(Clone)]
 struct HexContent{
-
+    height:u8
 }
 
 #[gdextension]
