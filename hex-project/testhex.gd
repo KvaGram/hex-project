@@ -1,12 +1,20 @@
 extends Node3D
 
 var orient:HexUtil.TileOrient = HexUtil.TileOrient.FLAT
-
+var testhex:SpiralHexGrid;
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
-	var test:SpiralHexGrid = SpiralHexGrid.new();
-	var verts:PackedVector3Array = test.testDrawHex(7, true);
+	testhex = SpiralHexGrid.new();
+	var size:int = 100
+	var verts:PackedVector3Array = testhex.testDrawHex(size, true);
 	print(verts);
+	var draw:Draw3D = Draw3D.new();
+	add_child(draw);
+	for i in size:
+		var todraw:Array = Array(verts.slice(i*7, (i+1)*7));
+		todraw.append(verts.get(i*7+1))
+		draw.draw_line_loop(todraw, draw.random_color())
+		pass
 	
 	var testscenes:Array[PackedScene] = [
 		load("res://assets/tiles/Testtile1.tscn"),
@@ -14,7 +22,7 @@ func _ready() -> void:
 		load("res://assets/tiles/Testtile3.tscn"),
 		load("res://assets/tiles/Testtile4.tscn"),
 	]
-	bulid_test_chunks(2, 1, testscenes)
+	#bulid_test_chunks(2, 1, testscenes)
 	#for i in 7:
 		#var off1 = 3.45
 		#var off2 = 1
@@ -65,8 +73,8 @@ func _ready() -> void:
 				#0,
 				#(sqrt(3)/2) * chunk_qrs[0]*off2 + sqrt(3) * chunk_qrs[1]*off2)
 
-	%Freecam3D.look_at_from_position(Vector3(0, 8, 3), Vector3.ZERO)
-	call_deferred("test_coords")
+	#%Freecam3D.look_at_from_position(Vector3(0, 8, 3), Vector3.ZERO)
+	#call_deferred("test_coords")
 
 func test_coords():
 	print("Testing ti to QRS")

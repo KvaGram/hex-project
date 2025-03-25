@@ -67,14 +67,15 @@ impl SpiralHexGrid {
             (0.866, -0.500),     // 330°: (√3/2, -1/2)
         ];
         let mut ret = PackedVector3Array::new();
-        ret.resize((6 * count) as usize);
+        ret.resize((7 * count) as usize);
         for i in 0..count {
             let hex: Hex<i32> = spiral::spiral_index_to_hex(i as usize);
             let (x, y) = hex.to_xy(flat);
+            ret[i as usize * 7] = Vector3::new(x, 0.0, y);
             for j in 0..6 { 
                 let j = j as usize;
                 let i = i as usize;
-                ret[i*6+j] = if flat {
+                ret[i*7+j+1] = if flat {
                     Vector3::new(
                         FLAT_UP_CORNERS[j].0 + x,
                         0.0,
