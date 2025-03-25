@@ -46,7 +46,7 @@ impl IRefCounted for SpiralHexGrid {
 #[godot_api]
 impl SpiralHexGrid {
     #[func]
-    pub fn testDrawHex(&mut self, count:i32, flat:bool) ->PackedVector3Array {
+    pub fn testDrawHex(&self, count:i32, flat:bool) ->PackedVector3Array {
         if count <= 0 {
             panic!("Can't draw imaginary hexagons");
         }
@@ -90,8 +90,6 @@ impl SpiralHexGrid {
                 }
             }
         }
-
-
         return ret;
 
     }
