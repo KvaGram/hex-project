@@ -1,3 +1,6 @@
+use std::cmp;
+use std::u8;
+
 use godot::classes::Image;
 use godot::prelude::*;
 use kva_hex_core::Hex;
@@ -15,50 +18,41 @@ impl IRefCounted for SpiralHexGrid {
         //std::unimplemented !()
         Self {data:vec![]}
     }
+}
 
-    fn to_string(&self) -> godot::builtin::GString {
-        std::unimplemented !()
+fn get_height_by_sample(x0:i32, y0:i32, x1:i32, y1:i32, map:&Gd<Image>) ->u8 {
+    let mut sum:u32 = map.get_pixel(x0, y0).r8().into();
+    let count:u32 = ((x1-x0) * (y1-y0)+1).try_into().unwrap_or(u32::MAX);
+    for x in x0..x1 {
+        for y in y0..y1 {
+            sum += u32::from(map.get_pixel(x, y).r8());
+        }
     }
-
-    fn on_notification(&mut self, what: godot::classes::notify::ObjectNotification) {
-        std::unimplemented !()
-    }
-
-    fn get_property(&self, property: StringName) -> Option< Variant > {
-        std::unimplemented !()
-    }
-
-    fn set_property(&mut self, property: StringName, value: Variant) -> bool {
-        std::unimplemented !()
-    }
-
-    fn get_property_list(&mut self) -> Vec< godot::meta::PropertyInfo > {
-        std::unimplemented !()
-    }
-
-    fn validate_property(&self, property: &mut godot::meta::PropertyInfo) {
-        std::unimplemented !()
-    }
-
-    fn property_get_revert(&self, property: StringName) -> Option< Variant > {
-        std::unimplemented !()
-    }
+    (sum/count).try_into().unwrap_or(u8::MAX)
 }
 #[godot_api]
 impl SpiralHexGrid {
     #[func]
-    pub fn fromHighmap(&mut self, layers:i32, map:Image) {
+    pub fn fromHighmap(&mut self, layers:i32, map:Gd<Image>) {
         let size = (3 * layers * (layers - 1) + 1) as usize;
-        let x_scale:u16;
-        let y_scale:u16;
+        //sample sizes. How big a rectangle (by radius) does each tile need to sample? For average height.
+        let x_s_size:i32 = map.get_width()  / (layers);
+        let y_s_size:i32 = map.get_height() / (layers);
 
-        
+        self.data.resize(size, HexContent { height: 0 });
+        for i in 0..size{
+            let h = spiral::spiral_index_to_hex(i);
+            let (x, y) = h.to_xy(true);
+            let (x, y) = (x.round() as i32, y.round() as i32);
+            let (x0, y0) = (cmp::max(x-x_s_size, 0), cmp::max(y-y_s_size, 0));
+            let (x1, y1) = (cmp::min(x+x_s_size, map.get_width()), cmp::min(y+y_s_size, map.get_height()));
+            self.data[i].height = get_height_by_sample(x0, y0, x1, y1, &map)
+        }
     }
-}
-#[godot_api]
-impl SpiralHexGrid {
+
+
     #[func]
-    pub fn testDrawHex(&self, count:i32, flat:bool) -> PackedVector3Array {
+    pub fn testDrawHex(count:i32, flat:bool) -> PackedVector3Array {
         if count <= 0 {
             panic!("Can't draw imaginary hexagons");
         }
