@@ -9,3 +9,5 @@ hex-extention/.sconsign.dblite
 /rust-extention/kva_hex_core/.debug
 /rust-extention/godot_kva_hex_core/target
 hex-project/.github/FUNDING.yml
+/rust-extention/godot_kva_hex_core/.debug/debug/.fingerprint
+/rust-extention/godot_kva_hex_core/.debug

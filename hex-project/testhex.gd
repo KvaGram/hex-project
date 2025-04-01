@@ -5,15 +5,32 @@ var testhex:SpiralHexGrid;
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
 	testhex = SpiralHexGrid.new();
-	var size:int = 100
-	var verts:PackedVector3Array = testhex.testDrawHex(size, true);
-	print(verts);
+	var layers:int = 10;
+	var size:int = (3 * (layers+1) * layers) + 1;
+	var testmap:Image;
+	var t0:int = Time.get_ticks_msec();
+	var t1:int;
+	var t2:int;
+	
+	testmap = Image.load_from_file("res://assets/maps/iceland_heightmap.png");
+	testmap.decompress();
+	t1 = Time.get_ticks_msec();
+	testhex.from_hightmap(layers, testmap);
+	t2 = Time.get_ticks_msec();
+	print("loading & decompress time: " + str(float(t1 - t0)/1000) + " seconds");
+	print("mapping time: " + str(float(t2 - t1)/1000) + " seconds");
+	print("total time: " + str(float(t2 - t0)/1000) + " seconds");
+	
+	var verts:PackedVector3Array = testhex.test_draw_hex(true);
+	var height:PackedByteArray = testhex.get_heightdata();
+	#print(verts);
 	var draw:Draw3D = Draw3D.new();
 	add_child(draw);
 	for i in size:
 		var todraw:Array = Array(verts.slice(i*7, (i+1)*7));
 		todraw.append(verts.get(i*7+1))
 		draw.draw_line_loop(todraw, draw.random_color())
+		
 		pass
 	
 	var testscenes:Array[PackedScene] = [

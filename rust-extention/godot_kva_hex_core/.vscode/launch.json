@@ -1,0 +1,25 @@
+{
+	// Use IntelliSense to learn about possible attributes.
+	// Hover to view descriptions of existing attributes.
+	// For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"name": "Debug Project (Godot 4)",
+			"type": "lldb",
+			"request": "launch",
+			"preLaunchTask": "rust: cargo build",
+			// "linux": {
+            //     "program": "/usr/local/bin/godot4",
+            // },
+            "program": "c:\\Users\\Grambo\\Documents\\Programmer\\Godot_v4.4-stable_win64_console.exe",
+            
+			"cwd": "${workspaceFolder}/../../hex-project",
+            "args": [
+                "-e", // run editor (remove this to launch the scene directly)
+                "-w", // windowed mode
+            ],
+		}
+	]
+}
+//'c:\Users\Grambo\Documents\GitHub\hex-project\rust-extention\godot_kva_hex_core\.debug\debug\godot_kva_hex_core.exe' does not exist
