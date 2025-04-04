@@ -6,3 +6,5 @@ reloadable = true
 [libraries]
 windows.debug.x86_64 =   "res://../rust-extention/godot_kva_hex_core/target/debug/godot_kva_hex_core.dll"
 windows.release.x86_64 = "res://../rust-extention/godot_kva_hex_core/target/release/godot_kva_hex_core.dll"
+linux.debug.x86_64 =     "res://../rust-extention/godot_kva_hex_core/target/debug/libgodot_kva_hex_core.so"
+linux.release.x86_64 =   "res://../rust-extention/godot_kva_hex_core/target/release/libgodot_kva_hex_core.so"

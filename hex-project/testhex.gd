@@ -11,7 +11,7 @@ func _ready() -> void:
 	var t0:int = Time.get_ticks_msec();
 	var t1:int;
 	var t2:int;
-	
+
 	testmap = Image.load_from_file("res://assets/maps/iceland_heightmap.png");
 	testmap.decompress();
 	t1 = Time.get_ticks_msec();
@@ -20,7 +20,7 @@ func _ready() -> void:
 	print("loading & decompress time: " + str(float(t1 - t0)/1000) + " seconds");
 	print("mapping time: " + str(float(t2 - t1)/1000) + " seconds");
 	print("total time: " + str(float(t2 - t0)/1000) + " seconds");
-	
+
 	var verts:PackedVector3Array = testhex.test_draw_hex(true);
 	var height:PackedByteArray = testhex.get_heightdata();
 	#print(verts);
@@ -30,9 +30,9 @@ func _ready() -> void:
 		var todraw:Array = Array(verts.slice(i*7, (i+1)*7));
 		todraw.append(verts.get(i*7+1))
 		draw.draw_line_loop(todraw, draw.random_color())
-		
+
 		pass
-	
+
 	var testscenes:Array[PackedScene] = [
 		load("res://assets/tiles/Testtile1.tscn"),
 		load("res://assets/tiles/Testtile2.tscn"),

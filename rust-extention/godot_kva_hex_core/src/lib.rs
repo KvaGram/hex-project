@@ -21,22 +21,26 @@ impl IRefCounted for SpiralHexGrid {
     }
 }
 
-fn get_height_by_sample(x0:i32, y0:i32, x1:i32, y1:i32, w:i32, data: &PackedByteArray) ->u8 {
+
+
+fn get_height_by_sample(x0:i32, y0:i32, x1:i32, y1:i32, width:i32, num_chan:i32, data: &PackedByteArray) ->u8 {
     let mut index:usize = 0;
     if y1-y0 < 1 || x1-x0 < 1 {
-        index = ((y0 * w + x0) * 3) as usize;
+        index = ((y0 * width + x0) * 3) as usize;
         return data.get(index).unwrap_or(0);
     }
-    let mut sum:u32 = 0;//map.get_pixel(x0, y0).r8().into();
-    let count:u32 = ((x1-x0) * (y1-y0)+1).try_into().unwrap_or(u32::MAX);
-    for y in y0..y1{
-        index = ((y * w + x0) * 3) as usize;
-        for _ in x0..x1 {
-            sum += data.get(index).unwrap_or(0) as u32;
-            index += 3;
+    else {
+        let mut sum:u32 = 0;//map.get_pixel(x0, y0).r8().into();
+        let count:u32 = ((x1-x0) * (y1-y0)).try_into().unwrap_or(u32::MAX);
+        for y in y0..y1{
+            index = ((y * width + x0) * 3) as usize;
+            for _ in x0..x1 {
+                sum += data.get(index).unwrap_or(0) as u32;
+                index += 3;
+            }
         }
+        (sum/count).try_into().unwrap_or(u8::MAX)
     }
-    (sum/count).try_into().unwrap_or(u8::MAX)
 }
 fn get_height_by_sample2(x0:i32, y0:i32, x1:i32, y1:i32, map: &Image) ->u8 {
     //godot_print!("get_height_by_sample {x0}, {y0}, {x1}, {y1}", );
@@ -63,20 +67,20 @@ impl SpiralHexGrid {
         };
             
         let data: PackedByteArray = map.get_data();
-        let size = (3 * (layers+1) * layers + 1) as usize;
-        let (width, height) = (map.get_width(), map.get_height());
+        let size: usize = (3 * (layers+1) * layers + 1) as usize;
+        let (width, _height) = (map.get_width(), map.get_height());
         //sample sizes. How big a rectangle (by radius) does each tile need to sample? For average height.
         let x_s_size:i32 = map.get_width()  / (layers*2);
         let y_s_size:i32 = map.get_height() / (layers*2);
-        let scale_x = map.get_width() as f32 / (2 * layers) as f32;
-        let scale_y = map.get_height() as f32 / (2 * layers) as f32;
+        let scale_x: f32 = map.get_width() as f32 / (2 * layers) as f32;
+        let scale_y: f32 = map.get_height() as f32 / (2 * layers) as f32;
         //godot_print!("size {size}, x_s_size {x_s_size}, y_s_size {y_s_size}");
 
         self.data.resize(size, HexContent { height: 0 });
         for i in 0..size{
-            let h = spiral::spiral_index_to_hex(i);
-            let mut x;
-            let mut y;
+            let h: Hex<i32> = spiral::spiral_index_to_hex(i);
+            let mut x: f32;
+            let mut y: f32;
             (x, y) = h.to_xy(true);
             x = x * scale_x + (map.get_width()/2) as f32;
             y = y * scale_y + (map.get_height()/2) as f32;
@@ -84,8 +88,8 @@ impl SpiralHexGrid {
             //godot_print!("hex at x{x}, y{y}");
             let (x0, y0) = (cmp::max(x-x_s_size, 0), cmp::max(y-y_s_size, 0));
             let (x1, y1) = (cmp::min(x+x_s_size, map.get_width()), cmp::min(y+y_s_size, map.get_height()));
-            self.data[i].height = get_height_by_sample(x0, y0, x1, y1, width, &data);
             //self.data[i].height = get_height_by_sample2(x0, y0, x1, y1, &map);
+            self.data[i].height = get_height_by_sample(x0, y0, x1, y1, width, num_chan, &data);
         }
     }
     #[func]
@@ -156,6 +160,7 @@ impl SpiralHexGrid {
         return ret;
 
     }
+
 }
 
 #[derive(Clone)]
