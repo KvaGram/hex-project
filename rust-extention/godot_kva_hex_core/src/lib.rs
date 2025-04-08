@@ -1,6 +1,7 @@
 use std::cmp;
 use std::u8;
 
+use godot::classes::mesh::PrimitiveType;
 use godot::classes::Image;
 use godot::classes::Mesh;
 use godot::prelude::*;
@@ -13,6 +14,8 @@ const NUM_LAYERS:u8 = 3;
 //number of tiles in a spiral grid.
 //at u8::MAX this would be 195'841 tiles.
 const NUM_TILES:usize = 3 * (NUM_LAYERS as usize +1) * NUM_LAYERS as usize + 1;
+//orientation of tiles. Flat means a flat edge towards 'north'. False value means pointy edge towards 'north'.
+const FLAT:bool = true;
 
 #[derive(GodotClass)]
 #[class(base=RefCounted)]
@@ -245,9 +248,54 @@ impl SpiralHexGrid {
     }
     #[func]
     pub fn generate_mesh(&self, size:Vector3, neighbours:Option<Gd<SpiralHexGrid>>) -> Gd<godot::classes::ArrayMesh> {
+        const VERTS_PER_TILE:usize = 7; // six corners and a center makes 7 vertecies
+        const INDICIES_PER_TILE:usize = 6*3; //six triangles make one hexagon, there are 3 vertecies per triangle.
+
+        //indicies of mesh arrays according to godot documentation
+        const VERTEX_INDEX:usize = 0;
+        //const UV1_INDEX:usize = 4;
+        const COLOR_INDEX:usize = 3;
+        const INDICIES_INDEX:usize = 12;
+
+        let scale = Vector3{x:1.0, y:size.y / 255.0, z:1.0};
+
+        // return value
         let mut mesh = godot::classes::ArrayMesh::new_gd();
+        //semi-return value (packed into above return value)
+        let mut packed_arrays = VariantArray::new();
+
         let mut vertecies = PackedVector3Array::new();
-        vertecies.resize(self.data.len()*6);
+        let mut colors = PackedColorArray::new();
+        let mut indecies = PackedInt32Array::new();
+
+        //resize arrays to expected sizes.
+        vertecies.resize(NUM_TILES * VERTS_PER_TILE);
+        colors.resize(NUM_TILES * VERTS_PER_TILE);
+        indecies.resize(NUM_TILES* INDICIES_PER_TILE);
+
+        for i in 0..NUM_TILES {
+            const COLOR_STEPS:f64 = 0.01;
+            //set color for the tiles to spiral out as a rainbow.
+            let color = Color::from_hsv((i as f64 *  COLOR_STEPS) % 1.0, 1.0, 1.0);
+            let hex = spiral::spiral_index_to_hex(i);
+            let height = self.data[i].height;
+            let center = hex.to_xy(FLAT);
+            let center = Vector3{x:center.0, y:height as f32, z:center.1} * scale;
+            let center_i = i * VERTS_PER_TILE;
+            vertecies[center_i] = center;
+
+            //todo - get neighbors, handle the literal edge cases, calculate height for each corner of the hex.
+            //store vertecies and color into their arrays.
+            //compile the polygons by indecies, store those.
+
+
+        }
+
+        packed_arrays.set(VERTEX_INDEX, &vertecies.to_variant());
+        packed_arrays.set(COLOR_INDEX, &colors.to_variant());
+        packed_arrays.set(INDICIES_INDEX, &indecies.to_variant());
+        mesh.add_surface_from_arrays(PrimitiveType::TRIANGLES, &packed_arrays);
+
 
         //TODO find height of each corner of each hex based on heights of neiboring hex tiles.
         // Since each corner is shared between three tiles, a corner's height will be the average of the three
