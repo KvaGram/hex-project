@@ -168,6 +168,7 @@ pub struct Hex<T> {
 }
 impl<T> Hex<T> where 
 T: Signed + Copy + ToPrimitive{
+    pub fn as_array(&self) -> [T;3]{return [self.q, self.r, self.s()]}
     /// the s coordinate.
     pub fn s(&self) -> T {-self.q - self.r}
     pub fn to_xy(&self, flat:bool) -> (f32,f32) {
