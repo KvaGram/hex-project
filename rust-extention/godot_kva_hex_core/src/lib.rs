@@ -22,7 +22,6 @@ const FLAT:bool = true;
 struct SpiralHexGrid {
     data:[HexContent; NUM_TILES],
     super_pos:Hex<i32>, //coordinates of this grid within a grid of grids.
-    origin:Hex<i32> //origin must never be manually set.
 }
 
 #[godot_api]
@@ -100,7 +99,7 @@ impl SpiralHexGrid {
         Self::calculate_origin(self.super_pos)
     }
     #[func]
-    pub fn origin_packed_array(&self)->PackedInt32Array {PackedInt32Array::from(self.origin().as_array())}
+    pub fn origin_packed_array(&self)->PackedInt32Array {PackedInt32Array::from(self.origin().as_array() )}
     #[func]
     pub fn super_pos_packed_array(&self)-> PackedInt32Array {PackedInt32Array::from(self.super_pos.as_array())}
     #[func]
@@ -157,7 +156,7 @@ impl SpiralHexGrid {
         }
         return ret;
     }
-    pub fn to_other_grid_offset(&self, other:Self)->Hex<i32>{
+    pub fn to_other_grid_offset(&self, &other:Self)->Hex<i32>{
         other.origin() - self.origin()
     }
     ///returns neighbors of a tile (presumed) in this grid. Returns tile coordinates in local space and optionally direction index of neighboring grid for tiles outside of layer range.
@@ -246,8 +245,12 @@ impl SpiralHexGrid {
         return ret;
 
     }
+
+    fn getData(&self)->&[HexContent; NUM_TILES]{
+        return &self.data;
+    }
     #[func]
-    pub fn generate_mesh(&self, size:Vector3, neighbours:Option<Gd<SpiralHexGrid>>) -> Gd<godot::classes::ArrayMesh> {
+    pub fn generate_mesh(&self, size:Vector3, grid_neighbours:Vec<Option<Gd<SpiralHexGrid>>>) -> Gd<godot::classes::ArrayMesh> {
         const VERTS_PER_TILE:usize = 7; // six corners and a center makes 7 vertecies
         const INDICIES_PER_TILE:usize = 6*3; //six triangles make one hexagon, there are 3 vertecies per triangle.
 
@@ -273,6 +276,7 @@ impl SpiralHexGrid {
         colors.resize(NUM_TILES * VERTS_PER_TILE);
         indecies.resize(NUM_TILES* INDICIES_PER_TILE);
 
+        //for each tile. This may take some time...
         for i in 0..NUM_TILES {
             const COLOR_STEPS:f64 = 0.01;
             //set color for the tiles to spiral out as a rainbow.
@@ -283,14 +287,55 @@ impl SpiralHexGrid {
             let center = Vector3{x:center.0, y:height as f32, z:center.1} * scale;
             let center_i = i * VERTS_PER_TILE;
             vertecies[center_i] = center;
+            let neighbors = self.get_neighbors_local(hex);
+            let mut n_heights = [(255/2) as f32;6];
+            for n in 0..6 {
+                n_heights[n] = 
+                if neighbors[n].1.is_some() {
+                    if grid_neighbours[neighbors[n].1.unwrap()].is_some(){
+                        let grid_index = neighbors[n].1.unwrap();
+                        let grid = grid_neighbours[grid_index].as_ref().unwrap();
+                        //convert coodinates from local grid's space to the other grid's space
+                        let nhex = neighbors[n].0 + self.origin() - grid.bind().origin();
+                        let nindex = spiral::hex_to_spiral_index(nhex);
+                        assert!(nindex < NUM_TILES); //If this fails, there is a math error somewhere!
+                        grid.bind().get_heightdata_at(nindex as i32) as f32
+                    }
+                    else {(255/2) as f32}
+                }
+                else {
+                    let nindex = spiral::hex_to_spiral_index(neighbors[n].0);
+                    assert!(nindex < NUM_TILES); //If this fails, there is a math error somewhere!
+                    self.get_heightdata_at(nindex as i32) as f32
+                }
+            }
 
+            //mark neighbor heights as immutable from now on.
+            let n_heights = n_heights;
+
+            //for each corner
+            for c in 0..6 {
+                let v1 = center_i + c;
+                let v2 = center_i + (c+1)%6;
+
+                let vertex = Vector3{
+                    x: {if FLAT {FLAT_UP_CORNERS[c]} else {POINTY_UP_CORNERS[c]}}.0,
+                    y: (height as f32 +n_heights[c] + n_heights[(c+1)%6])/3f32,
+                    z: {if FLAT {FLAT_UP_CORNERS[c]} else {POINTY_UP_CORNERS[c]}}.1,
+                };
+                vertecies[center_i+c] = vertex;
+                colors[center_i+c] = color;
+
+                //vertecies[center_i + 1 + c]
+                indecies[center_i + 1 + c*3 + 0] = v1 as i32;
+                indecies[center_i + 1 + c*3 + 1] = center_i as i32;
+                indecies[center_i + 1 + c*3 + 2] = v2 as i32;
+                
+            }
             //todo - get neighbors, handle the literal edge cases, calculate height for each corner of the hex.
             //store vertecies and color into their arrays.
             //compile the polygons by indecies, store those.
-
-
         }
-
         packed_arrays.set(VERTEX_INDEX, &vertecies.to_variant());
         packed_arrays.set(COLOR_INDEX, &colors.to_variant());
         packed_arrays.set(INDICIES_INDEX, &indecies.to_variant());
@@ -304,6 +349,22 @@ impl SpiralHexGrid {
         mesh //returns final mesh
     }
 }
+const FLAT_UP_CORNERS: [(f32, f32); 6] = [
+    (0.500, -0.866),    
+    (1.000, 0.000),   
+    (0.500, 0.866), 
+    (-0.500, 0.866),  
+    (-1.000, 0.000), 
+    (-0.500, -0.866),   
+];
+const POINTY_UP_CORNERS: [(f32, f32); 6] = [
+    (0.866, -0.500), 
+    (0.866, 0.500), 
+    (0.000, 1.000), 
+    (-0.866, 0.500), 
+    (-0.866, -0.500),  
+    (0.000, -1.000), 
+];
 
 #[derive(Clone, Copy)]
 struct HexContent{
