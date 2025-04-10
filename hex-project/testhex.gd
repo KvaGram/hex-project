@@ -27,6 +27,9 @@ func _ready() -> void:
 	print("total time: " + str(float(t3 - t0)/1000) + " seconds");
 	
 	var meshRender = MeshInstance3D.new();
+	var material = StandardMaterial3D.new();
+	material.vertex_color_use_as_albedo = true;
+	meshRender.material_override = material;
 	add_child(meshRender);
 	meshRender.mesh = mesh;
 		

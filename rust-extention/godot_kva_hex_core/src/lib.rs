@@ -1,6 +1,7 @@
 use std::cmp;
 use std::u8;
 
+use godot::classes::mesh::ArrayType;
 use godot::classes::mesh::PrimitiveType;
 use godot::classes::Image;
 use godot::prelude::*;
@@ -10,7 +11,7 @@ use kva_hex_core::spiral;
 use kva_hex_core::Hex32;
 
 //Number of layers in a spiral grid.
-const NUM_LAYERS:u8 = 3;
+const NUM_LAYERS:u8 = 10;
 //number of tiles in a spiral grid.
 //at u8::MAX this would be 195'841 tiles.
 const NUM_TILES:usize = 3 * (NUM_LAYERS as usize +1) * NUM_LAYERS as usize + 1;
@@ -248,11 +249,11 @@ impl SpiralHexGrid {
         const VERTS_PER_TILE:usize = 7; // six corners and a center makes 7 vertecies
         const INDICIES_PER_TILE:usize = 6*3; //six triangles make one hexagon, there are 3 vertecies per triangle.
 
-        //indicies of mesh arrays according to godot documentation
-        const VERTEX_INDEX:usize = 0;
-        //const UV1_INDEX:usize = 4;
-        const COLOR_INDEX:usize = 3;
-        const INDICIES_INDEX:usize = 12;
+        //structe conststs of mesh arrays according to godot documentation
+        let vertex_index:usize = ArrayType::VERTEX.ord() as usize;
+        let color_index:usize = ArrayType::COLOR.ord() as usize;
+        let indicies_index:usize = ArrayType::INDEX.ord() as usize;
+        let packed_array_size:usize = ArrayType::MAX.ord() as usize;
 
         let scale = Vector3{x:1.0, y:size.y / 255.0, z:1.0};
 
@@ -261,17 +262,22 @@ impl SpiralHexGrid {
         //semi-return value (packed into above return value)
         let mut packed_arrays = VariantArray::new();
 
-        let mut vertecies = PackedVector3Array::new();
+/*         let mut vertecies = PackedVector3Array::new();
         let mut colors = PackedColorArray::new();
-        let mut indecies = PackedInt32Array::new();
+        let mut indecies = PackedInt32Array::new(); */
+
+        let mut vertecies = [Vector3::ZERO; NUM_TILES * VERTS_PER_TILE];
+        let mut colors = [Color::BLACK; NUM_TILES * VERTS_PER_TILE];
+        let mut indecies = [0i32; NUM_TILES* INDICIES_PER_TILE];
 
         //resize arrays to expected sizes.
-        vertecies.resize(NUM_TILES * VERTS_PER_TILE);
+/*         vertecies.resize(NUM_TILES * VERTS_PER_TILE);
         colors.resize(NUM_TILES * VERTS_PER_TILE);
-        indecies.resize(NUM_TILES* INDICIES_PER_TILE);
+        indecies.resize(NUM_TILES* INDICIES_PER_TILE); */
 
         //for each tile. This may take some time...
         for i in 0..NUM_TILES {
+            //godot_print!("drawing mesh for tile index {i} of {NUM_TILES}");
             const COLOR_STEPS:f64 = 0.01;
             //set color for the tiles to spiral out as a rainbow.
             let color = Color::from_hsv((i as f64 *  COLOR_STEPS) % 1.0, 1.0, 1.0);
@@ -279,9 +285,13 @@ impl SpiralHexGrid {
             let height = self.data[i].height;
             let center = hex.to_xy(FLAT);
             let center = Vector3{x:center.0, y:height as f32, z:center.1} * scale;
-            let center_i = i * VERTS_PER_TILE;
-            vertecies[center_i] = center;
-            colors[center_i] = Color::BLACK;
+            
+            let vertex_index_start = i * VERTS_PER_TILE;
+            let indicies_index_start = i * INDICIES_PER_TILE;
+
+
+            vertecies[vertex_index_start] = center;
+            colors[vertex_index_start] = Color::BLACK;
             let neighbors = self.get_neighbors_local(hex);
             let mut n_heights = [(255/2) as f32;6];
             for n in 0..6 {
@@ -310,27 +320,51 @@ impl SpiralHexGrid {
 
             //for each corner
             for c in 0..6 {
-                let v1 = center_i + 1 + c;
-                let v2 = center_i + 1 + (c+1)%6;
+                let v1 = vertex_index_start + 1 + c;
+                let v2 = vertex_index_start + 1 + (c+1)%6;
+
+                let h1 = n_heights[c];
+                let h2 = n_heights[if c >= 5{0} else {c+1}];
+                let h = (height as f32 + h1 + h2) / 3.0;
 
                 let vertex = Vector3{
                     x: {if FLAT {FLAT_UP_CORNERS[c]} else {POINTY_UP_CORNERS[c]}}.0,
-                    y: (height as f32 +n_heights[c] + n_heights[(c+1)%6])/3f32,
+                    y: h,
+                    //y: 0.0,
                     z: {if FLAT {FLAT_UP_CORNERS[c]} else {POINTY_UP_CORNERS[c]}}.1,
-                };
-                vertecies[center_i + c + 1] = vertex;
-                colors[center_i + c + 1] = color;
+                } * scale + center;
+                vertecies[vertex_index_start + c + 1] = vertex;
+                colors[vertex_index_start + c + 1] = color;
 
                 //vertecies[center_i + 1 + c]
-                indecies[center_i + 1 + c*3 + 0] = v1 as i32;
-                indecies[center_i + 1 + c*3 + 1] = center_i as i32;
-                indecies[center_i + 1 + c*3 + 2] = v2 as i32;
+                indecies[indicies_index_start + c*3 + 0] = vertex_index_start as i32;
+                indecies[indicies_index_start + c*3 + 1] = v1 as i32;
+                indecies[indicies_index_start + c*3 + 2] = v2 as i32;
                 
             }
         }
-        packed_arrays.set(VERTEX_INDEX, &vertecies.to_variant());
-        packed_arrays.set(COLOR_INDEX, &colors.to_variant());
-        packed_arrays.set(INDICIES_INDEX, &indecies.to_variant());
+/*         godot_print!("vertecies");
+        for v in vertecies{
+            godot_print!("{v}")
+        }
+        godot_print!("colors");
+        for c in colors{
+            godot_print!("{c}")
+        }
+        godot_print!("indecies");
+        for i in indecies{
+            godot_print!("{i}")
+        } */
+
+        //convert data to Godot varaints.
+        let vertecies = PackedVector3Array::from(vertecies).to_variant();
+        let colors = PackedColorArray::from(colors).to_variant();
+        let indecies = PackedInt32Array::from(indecies).to_variant();
+        
+        packed_arrays.resize(packed_array_size, &Variant::nil());
+        packed_arrays.set(vertex_index, &vertecies);
+        packed_arrays.set(color_index, &colors);
+        packed_arrays.set(indicies_index, &indecies);
         mesh.add_surface_from_arrays(PrimitiveType::TRIANGLES, &packed_arrays);
         
         mesh //returns final mesh

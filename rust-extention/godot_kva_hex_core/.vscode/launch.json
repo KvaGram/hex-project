@@ -8,18 +8,18 @@
 			"name": "Debug Project (Godot 4)",
 			"type": "lldb",
 			"request": "launch",
-			"preLaunchTask": "rust: cargo build",
+			//"preLaunchTask": "rust: cargo build",
 			// "linux": {
             //     "program": "/usr/local/bin/godot4",
             // },
-            "program": "c:\\Users\\Grambo\\Documents\\Programmer\\Godot_v4.4-stable_win64_console.exe",
+            "program": "c:\\Users\\Grambo\\Documents\\Programmer\\Godot_v4.4-stable_win64.exe",
             
 			"cwd": "${workspaceFolder}/../../hex-project",
+			//"cwd": "${workspaceFolder}",
             "args": [
-                "-e", // run editor (remove this to launch the scene directly)
+                //"-e", // run editor (remove this to launch the scene directly)
                 "-w", // windowed mode
             ],
 		}
 	]
 }
-//'c:\Users\Grambo\Documents\GitHub\hex-project\rust-extention\godot_kva_hex_core\.debug\debug\godot_kva_hex_core.exe' does not exist
