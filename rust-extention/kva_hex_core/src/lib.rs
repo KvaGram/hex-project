@@ -1,9 +1,14 @@
 use num::{Signed, ToPrimitive};
-
 const TAU:f64 = 6.2831853071;
+
+///Hex32 is a common type of Hex, used for common values.
+pub type Hex32 = Hex<i32>;
+///Hex8 is a common type of Hex, used for small values.
+pub type Hex8 = Hex<i8>;
+
 pub mod direction{
     use super::*;
-    pub const DIRECTIONS: [Hex<i8>; 12] = [
+    pub const DIRECTIONS: [Hex8; 12] = [
         // flat-side directions (neighbors)
         Hex {q: 0,r:-1},
         Hex {q: 1,r:-1},
@@ -19,7 +24,7 @@ pub mod direction{
         Hex { q: -2, r: 1 },
         Hex { q: -1, r: -1 },
     ];
-    ///Special trait used to allow broad implemtation of From<Hex<i8>> on common signed rational numbers.
+    ///Special trait used to allow broad implemtation of From<Hex8> on common signed rational numbers.
     trait NotI8 {}
     impl NotI8 for i16 {}
     impl NotI8 for i32 {}
@@ -29,11 +34,11 @@ pub mod direction{
     impl NotI8 for f32 {}
     impl NotI8 for f64 {}
 
-    /// Converts Hex<i8>, which is used for directions and other short values of Hex into other signed primitive implementations of Hex.
+    /// Converts Hex8, which is used for directions and other short values of Hex into other signed primitive implementations of Hex.
     /// Conversion From i8 is expected to always work, as i8 is the smallest signed primitive number.
-    impl<T> From<Hex<i8>> for Hex<T> 
+    impl<T> From<Hex8> for Hex<T> 
     where T: NotI8 + From<i8>{
-        fn from(hex: Hex<i8>) -> Self {
+        fn from(hex: Hex8) -> Self {
             Hex {
                 q: T::from(hex.q),
                 r: T::from(hex.r),
@@ -41,7 +46,7 @@ pub mod direction{
         }
     }
 
-        ///Special trait used to allow broad implemtation of TryFrom<Hex<i32>> on common signed rational numbers.
+        ///Special trait used to allow broad implemtation of TryFrom<Hex32> on common signed rational numbers.
         trait NotI32 {}
         impl NotI32 for i8 {}
         impl NotI32 for i16 {}
@@ -51,14 +56,14 @@ pub mod direction{
         impl NotI32 for f32 {}
         impl NotI32 for f64 {}
 
-        /// Tries to convert Hex<i32>, the default implementation, to any other signed primitive implementation of Hex.
+        /// Tries to convert Hex32, the default implementation, to any other signed primitive implementation of Hex.
         /// Conversion fail for i16, i8 or f32. Conversions for those should implement error handling for those.
         /// Conversions into larger values should pass, and could be safly unwrapped.
-        impl<T> TryFrom<Hex<i32>> for Hex<T>
+        impl<T> TryFrom<Hex32> for Hex<T>
             where T: NotI32 + TryFrom<i32> {
                 type Error = ();
             
-                fn try_from(value: Hex<i32>) -> Result<Self, Self::Error> {
+                fn try_from(value: Hex32) -> Result<Self, Self::Error> {
                     Ok(Hex {
                         q: T::try_from(value.q).map_err(|_| ())?,
                         r: T::try_from(value.r).map_err(|_| ())?,
@@ -125,35 +130,35 @@ pub mod direction{
     }
     impl Pointy {
         ///Returns Hexagon coordinate for this direction
-        pub fn get(self:Pointy)->Hex<i8> {
+        pub fn get(self:Pointy)->Hex8 {
             get_dir_all(self as i32)
         }
     }
     impl Flat {
         ///Returns Hexagon coordinate for this direction
-        pub fn get(self:Flat)->Hex<i8> {
+        pub fn get(self:Flat)->Hex8 {
             get_dir_all(self as i32)
         }
     }
-    pub fn get_dir_all(d:i32)->Hex<i8> {
+    pub fn get_dir_all(d:i32)->Hex8 {
         let mut d = d;
         while d >= 12{d -= 12}
         while d <  0 {d += 12}
         let d:usize = usize::try_from(d).expect("d should be wrapped to range (0 .. 12)");
         return DIRECTIONS[d];
     }
-    pub fn get_dir(d:i32)->Hex<i8> {
+    pub fn get_dir(d:i32)->Hex8 {
         let mut d = d;
         while d >= 6 {d -= 6}
         while d <  0 {d += 6}
         let d:usize = usize::try_from(d).expect("d should be wrapped to range (0 .. 6)");
         return DIRECTIONS[d];
     }
-    pub fn radian_get_dir(r:f64)->Hex<i8> {
+    pub fn radian_get_dir(r:f64)->Hex8 {
         let d:i32 = (6.0 * r / 6.28).round() as i32;
         return get_dir(d);
     }
-    pub fn radian_get_dir_all(r:f64)->Hex<i8> {
+    pub fn radian_get_dir_all(r:f64)->Hex8 {
         let d:i32 = (12.0 * r / 6.28).round() as i32;
         return get_dir_all(d);
     }
@@ -232,14 +237,14 @@ impl<T, U> std::ops::Mul<U> for Hex<T>
 
 pub mod spiral
 {
-    use std::{fmt::Display, io::Error};
+    use std::{fmt::Display/* , io::Error */};
 
     use num::{integer::Roots, ToPrimitive};
     use crate::direction::get_dir;
 
     use super::*;
     impl<T> TryFrom<Spiral> for Hex<T>
-    where T:Signed + Ord + TryFrom<i32> + Copy + From<Hex<i32>>{
+    where T:Signed + Ord + TryFrom<i32> + Copy + From<Hex32>{
         type Error = T::Error;
     
         fn try_from(value: Spiral) -> Result<Self, Self::Error> {
@@ -279,17 +284,17 @@ pub mod spiral
         }
     }
 
-    pub fn spiral_index_to_hex(index:usize)->Hex<i32> {
+    pub fn spiral_index_to_hex(index:usize)->Hex32 {
         if index <= 0 {
             return Hex{q:0, r:0};
         }
         spiral_to_hex(Spiral::from(index))
     }
-    pub fn spiral_to_hex(spiral:Spiral)->Hex<i32> {
+    pub fn spiral_to_hex(spiral:Spiral)->Hex32 {
         //hex direction from center tile to segment start
-        let d1:Hex<i32> = get_dir(spiral.segment()).into();
+        let d1:Hex32 = get_dir(spiral.segment()).into();
         //Hex direction following segment positive direction
-        let d2:Hex<i32> = get_dir(spiral.segment()+2).into();
+        let d2:Hex32 = get_dir(spiral.segment()+2).into();
         d1 * spiral.layer + d2 * (spiral.posision % spiral.layer)
     }
     pub fn hex_to_spiral<T>(hex:Hex<T>)->Result<Spiral, ()>
