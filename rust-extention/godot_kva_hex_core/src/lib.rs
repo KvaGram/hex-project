@@ -28,6 +28,7 @@ struct SpiralHexGrid {
 #[godot_api]
 impl IRefCounted for SpiralHexGrid {
     fn init(_base: godot::obj::Base < Self::Base >) -> Self {
+        godot_print!("Number of layers: {NUM_LAYERS} - Number of tiles: {NUM_TILES}");
         //std::unimplemented !()
         //Self {data:vec![], layers: 0, super_pos:Hex{q:0,r:0}, origin:Hex{q:0,r:0}}
         Self {data:[HexContent::default(); NUM_TILES], /*layers: 0,*/ super_pos:Hex{q:0,r:0}/*, origin:Hex{q:0,r:0}*/}
@@ -106,23 +107,25 @@ impl SpiralHexGrid {
     #[func]
     pub fn from_hightmap(&mut self, /*layers:u8,*/ map:Gd<Image>) {
         //self.layers = layers;
-        let num_chan = {
+        //detect used channels seem to not function.
+        let num_chan = 3;/* {
             let ord = map.detect_used_channels().ord();
             if ord == 0 {1}
             else if ord == 1 || ord == 3 {2}
             else if ord == 4 {3}
             else if ord == 5 {4}
             else {3}
-        };
+        }; */
+        let num_layers = NUM_LAYERS as i32;
             
         let data: PackedByteArray = map.get_data();
         //let size: usize = (3 * (NUM_LAYERS+1) * NUM_LAYERS + 1) as usize;
         let (width, _height) = (map.get_width(), map.get_height());
         //sample sizes. How big a rectangle (by radius) does each tile need to sample? For average height.
-        let x_s_size:i32 = map.get_width()  / (NUM_LAYERS*2) as i32;
-        let y_s_size:i32 = map.get_height() / (NUM_LAYERS*2) as i32;
-        let scale_x: f32 = map.get_width() as f32 / (2 * NUM_LAYERS) as f32;
-        let scale_y: f32 = map.get_height() as f32 / (2 * NUM_LAYERS) as f32;
+        let x_s_size:i32 = map.get_width()  / (num_layers * 2);
+        let y_s_size:i32 = map.get_height() / (num_layers * 2);
+        let scale_x: f32 = map.get_width() as f32 / (2 * num_layers) as f32;
+        let scale_y: f32 = map.get_height() as f32 / (2 * num_layers) as f32;
         //godot_print!("size {size}, x_s_size {x_s_size}, y_s_size {y_s_size}");
 
         //self.data.resize(size, HexContent { height: 0 });
@@ -170,7 +173,7 @@ impl SpiralHexGrid {
         neighbors.resize(6,  (Hex{q:0,r:0},None));
         
         for d in 0..6 {
-            let n:Hex32 = get_dir(d).into();
+            let n:Hex32 = target + get_dir(d).into();
             let layers = NUM_LAYERS as i32;
             
             if n.q.abs() > layers || n.r.abs() >layers || n.s().abs() >layers {
@@ -275,16 +278,24 @@ impl SpiralHexGrid {
         colors.resize(NUM_TILES * VERTS_PER_TILE);
         indecies.resize(NUM_TILES* INDICIES_PER_TILE); */
 
+        //test
+        //godot_print!("Heights!");
+/*         for t in 0..NUM_TILES{
+            let h = self.data[t].height;
+            godot_print!("tile {t} is {h}");
+        } */
         //for each tile. This may take some time...
         for i in 0..NUM_TILES {
+            //godot_print!("Drawing tile {i}");
+
             //godot_print!("drawing mesh for tile index {i} of {NUM_TILES}");
             const COLOR_STEPS:f64 = 0.01;
             //set color for the tiles to spiral out as a rainbow.
             let color = Color::from_hsv((i as f64 *  COLOR_STEPS) % 1.0, 1.0, 1.0);
             let hex = spiral::spiral_index_to_hex(i);
-            let height = self.data[i].height;
-            let center = hex.to_xy(FLAT);
-            let center = Vector3{x:center.0, y:height as f32, z:center.1} * scale;
+            let height = self.data[i].height as f32;
+            let center_raw = hex.to_xy(FLAT);
+            let center = Vector3{x:center_raw.0, y:height, z:center_raw.1} * scale;
             
             let vertex_index_start = i * VERTS_PER_TILE;
             let indicies_index_start = i * INDICIES_PER_TILE;
@@ -304,14 +315,21 @@ impl SpiralHexGrid {
                         let nhex = neighbors[n].0 + self.origin() - grid.bind().origin();
                         let nindex = spiral::hex_to_spiral_index(nhex);
                         assert!(nindex < NUM_TILES); //If this fails, there is a math error somewhere!
-                        grid.bind().get_heightdata_at(nindex as i32) as f32
+                        let h = grid.bind().get_heightdata_at(nindex as i32) as f32;
+                        //godot_print!("neighbor {n} is in another grid. value set to {h}.");
+                        h
                     }
-                    else {(255/2) as f32}
+                    else {
+                        //godot_print!("neighbor {n} is out of bounds. value set to {}.", 0f32);
+                        0f32
+                    }
                 }
                 else {
                     let nindex = spiral::hex_to_spiral_index(neighbors[n].0);
                     assert!(nindex < NUM_TILES); //If this fails, there is a math error somewhere!
-                    self.get_heightdata_at(nindex as i32) as f32
+                    let h = self.get_heightdata_at(nindex as i32) as f32;
+                    //godot_print!("neighbor {n} was found as index {nindex}. value set to {h}.");
+                    h
                 }
             }
 
@@ -320,19 +338,23 @@ impl SpiralHexGrid {
 
             //for each corner
             for c in 0..6 {
+                //godot_print!("Printing corner {c}");
                 let v1 = vertex_index_start + 1 + c;
                 let v2 = vertex_index_start + 1 + (c+1)%6;
 
                 let h1 = n_heights[c];
-                let h2 = n_heights[if c >= 5{0} else {c+1}];
+                let h2 = n_heights[(c+1)%6];
                 let h = (height as f32 + h1 + h2) / 3.0;
+                //godot_print!("height = ({height} + {h1} + {h2}) / 3 =  {h}");
 
                 let vertex = Vector3{
-                    x: {if FLAT {FLAT_UP_CORNERS[c]} else {POINTY_UP_CORNERS[c]}}.0,
+                    x: {if FLAT {FLAT_UP_CORNERS[c]} else {POINTY_UP_CORNERS[c]}}.0
+                    + center_raw.0,
                     y: h,
                     //y: 0.0,
-                    z: {if FLAT {FLAT_UP_CORNERS[c]} else {POINTY_UP_CORNERS[c]}}.1,
-                } * scale + center;
+                    z: {if FLAT {FLAT_UP_CORNERS[c]} else {POINTY_UP_CORNERS[c]}}.1
+                    + center_raw.1,
+                } * scale;
                 vertecies[vertex_index_start + c + 1] = vertex;
                 colors[vertex_index_start + c + 1] = color;
 
@@ -342,6 +364,10 @@ impl SpiralHexGrid {
                 indecies[indicies_index_start + c*3 + 2] = v2 as i32;
                 
             }
+            //test
+            colors[vertex_index_start+1] = Color::WHITE;
+            //colors[vertex_index_start+2] = Color::BLUE;
+            //colors[vertex_index_start+3] = Color::GREEN;
         }
 /*         godot_print!("vertecies");
         for v in vertecies{
@@ -366,17 +392,17 @@ impl SpiralHexGrid {
         packed_arrays.set(color_index, &colors);
         packed_arrays.set(indicies_index, &indecies);
         mesh.add_surface_from_arrays(PrimitiveType::TRIANGLES, &packed_arrays);
-        
+
         mesh //returns final mesh
     }
 }
 const FLAT_UP_CORNERS: [(f32, f32); 6] = [
-    (0.500, -0.866),    
-    (1.000, 0.000),   
-    (0.500, 0.866), 
-    (-0.500, 0.866),  
-    (-1.000, 0.000), 
-    (-0.500, -0.866),   
+    (0.500, -0.866),     // 300°: (0.5, -√3/2) 
+    (1.000, 0.000),      // 0°: (1, 0)
+    (0.500, 0.866),      // 60°: (0.5, √3/2)
+    (-0.500, 0.866),     // 120°: (-0.5, √3/2)
+    (-1.000, 0.000),     // 180°: (-1, 0)
+    (-0.500, -0.866),    // 240°: (-0.5, -√3/2)
 ];
 const POINTY_UP_CORNERS: [(f32, f32); 6] = [
     (0.866, -0.500), 

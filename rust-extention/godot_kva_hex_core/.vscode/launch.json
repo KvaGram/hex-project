@@ -8,17 +8,18 @@
 			"name": "Debug Project (Godot 4)",
 			"type": "lldb",
 			"request": "launch",
-			//"preLaunchTask": "rust: cargo build",
-			// "linux": {
-            //     "program": "/usr/local/bin/godot4",
-            // },
+			"preLaunchTask": "rust: cargo build",
+			"linux": {
+                "program": "/home/lars/.var/app/io.github.MakovWait.Godots/data/godot/app_userdata/Godots/versions/Godot_v4_4_1-stable_linux_x86_64/Godot_v4.4.1-stable_linux.x86_64",
+            },
             "program": "c:\\Users\\Grambo\\Documents\\Programmer\\Godot_v4.4-stable_win64.exe",
             
-			"cwd": "${workspaceFolder}/../../hex-project",
-			//"cwd": "${workspaceFolder}",
+			//"cwd": "${workspaceFolder}/../../hex-project",
+			"cwd": "${workspaceFolder}",
             "args": [
                 //"-e", // run editor (remove this to launch the scene directly)
                 "-w", // windowed mode
+				"--path ${workspaceFolder}/../../hex-project"
             ],
 		}
 	]
