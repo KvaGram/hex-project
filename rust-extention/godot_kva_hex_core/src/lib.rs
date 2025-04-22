@@ -11,7 +11,7 @@ use kva_hex_core::spiral;
 use kva_hex_core::Hex32;
 
 //Number of layers in a spiral grid.
-const NUM_LAYERS:u8 = 10;
+const NUM_LAYERS:u8 = 2;
 //number of tiles in a spiral grid.
 //at u8::MAX this would be 195'841 tiles.
 const NUM_TILES:usize = 3 * (NUM_LAYERS as usize +1) * NUM_LAYERS as usize + 1;
@@ -131,6 +131,10 @@ impl SpiralHexGrid {
         //self.data.resize(size, HexContent { height: 0 });
         for i in 0..NUM_TILES{
             let h: Hex32 = spiral::spiral_index_to_hex(i);
+            //TEST - remove me
+            if i as i32 >= NUM_TILES as i32 - 20 {
+                godot_print!("height - {}, {}, {}", h.q, h.r, h.s());
+            }
             let mut x: f32;
             let mut y: f32;
             (x, y) = h.to_xy(true);
@@ -269,9 +273,9 @@ impl SpiralHexGrid {
         let mut colors = PackedColorArray::new();
         let mut indecies = PackedInt32Array::new(); */
 
-        let mut vertecies = [Vector3::ZERO; NUM_TILES * VERTS_PER_TILE];
-        let mut colors = [Color::BLACK; NUM_TILES * VERTS_PER_TILE];
-        let mut indecies = [0i32; NUM_TILES* INDICIES_PER_TILE];
+        let mut vertecies = [Vector3::ZERO; NUM_TILES * VERTS_PER_TILE + 14]; //TEST extra blank vertecies and indecies. Remeber to remove!
+        let mut colors = [Color::BLACK; NUM_TILES * VERTS_PER_TILE + 14];
+        let mut indecies = [0i32; NUM_TILES* INDICIES_PER_TILE + 36 ];
 
         //resize arrays to expected sizes.
 /*         vertecies.resize(NUM_TILES * VERTS_PER_TILE);
@@ -293,6 +297,12 @@ impl SpiralHexGrid {
             //set color for the tiles to spiral out as a rainbow.
             let color = Color::from_hsv((i as f64 *  COLOR_STEPS) % 1.0, 1.0, 1.0);
             let hex = spiral::spiral_index_to_hex(i);
+
+            //TEST - remove me
+            if i as i32 >= NUM_TILES as i32 - 20 {
+                godot_print!("draw - {}, {}, {}", hex.q, hex.r, hex.s());
+            }
+
             let height = self.data[i].height as f32;
             let center_raw = hex.to_xy(FLAT);
             let center = Vector3{x:center_raw.0, y:height, z:center_raw.1} * scale;
@@ -369,7 +379,7 @@ impl SpiralHexGrid {
             //colors[vertex_index_start+2] = Color::BLUE;
             //colors[vertex_index_start+3] = Color::GREEN;
         }
-/*         godot_print!("vertecies");
+        /*         godot_print!("vertecies");
         for v in vertecies{
             godot_print!("{v}")
         }
@@ -430,7 +440,7 @@ unsafe impl ExtensionLibrary for SpiralHexGrid {}
 pub fn add(left: u64, right: u64) -> u64 {
     left + right
 }
-
+/* 
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -441,3 +451,4 @@ mod tests {
         assert_eq!(result, 4);
     }
 }
+ */
