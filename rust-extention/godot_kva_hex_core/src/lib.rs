@@ -18,6 +18,7 @@ const NUM_TILES:usize = 3 * (NUM_LAYERS as usize +1) * NUM_LAYERS as usize + 1;
 //orientation of tiles. Flat means a flat edge towards 'north'. False value means pointy edge towards 'north'.
 const FLAT:bool = true; 
 
+pub mod mesh;
 #[derive(GodotClass)]
 #[class(base=RefCounted)]
 struct SpiralHexGrid {
