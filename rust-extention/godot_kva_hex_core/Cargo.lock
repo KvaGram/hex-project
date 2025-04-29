@@ -146,6 +146,7 @@ dependencies = [
 name = "godot_kva_hex_core"
 version = "0.1.0"
 dependencies = [
+ "bitflags",
  "godot",
  "kva_hex_core",
 ]

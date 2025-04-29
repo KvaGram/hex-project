@@ -7,5 +7,6 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
+bitflags = "2.9.0"
 godot = "0.2.4"
 kva_hex_core = { path = "../kva_hex_core" }
