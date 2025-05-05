@@ -7,6 +7,9 @@ use crate::SpiralHexGrid;
 #[derive(GodotClass)]
 #[class(base=Mesh)]
 struct SpiralHexMesh {
+    grid_verticies:Vec<Vector3>,
+    grid_indicies:Vec<i32>,
+    grid_colors:Vec<Color>,
     //if grid is not defined, layers will used without pulling this from grid.
     //This will result in a mesh without heightdata, meaning it's flat
     grid:Option<Gd<SpiralHexGrid>>,
@@ -44,6 +47,59 @@ bitflags! {
     }
 }
 
+#[godot_api]
+impl SpiralHexMesh
+{
+    #[func]
+    fn set_layers(&mut self, new_layers:i32)->bool {
+        let gridlength = {if self.grid.is_none(){None} else {
+            let layers:i32 = self.grid.as_ref().unwrap().bind().get_layers();
+            Some(layers)
+        }};
+        if new_layers < 0{
+            godot_error!("SpiralHexMesh cannot have a negative layer length. Change discarded");
+            return false;
+        }
+        else if new_layers > u8::MAX as i32 {
+            godot_error!("SpiralHexMesh cannot have a layer length greater than {}. Change discarded.", u8::MAX);
+            return false;
+        }
+        else if gridlength.is_some() && gridlength.unwrap() < new_layers {
+            godot_error!("SpiralHexMesh already have a defined grid with a length of {}. New length cannot be greater than that. Change discarded.", gridlength.unwrap());
+            return false;
+        }
+        else {
+            self.layers = new_layers as u8;
+            if gridlength.is_some() && gridlength.unwrap() != new_layers {
+                godot_warn!("SpiralHexMesh already have a defined grid with a length of {}. Setting layers manually means less of the grid is rendered in the mesh.", gridlength.unwrap());
+            }
+            self.regenerate();
+            return true;
+        }
+    }
+    #[func]
+    fn set_grid(&mut self, new_grid:Option<Gd<SpiralHexGrid>>) -> bool {
+        self.grid = new_grid;
+        if self.grid.is_some(){
+            self.layers = self.grid.as_ref().unwrap().bind().get_layers() as u8;
+        }
+        else {
+            self.layers = 0;
+        }
+        self.regenerate();
+        return true;
+    }
+
+    fn regenerate(&mut self){
+        let grid_vertex_size = 0usize;
+        let grid_index_size = 0usize;
+
+        self.grid_verticies.resize(grid_vertex_size, Vector3::ZERO);
+        self.grid_colors.resize(grid_vertex_size, Color::BLACK);
+        self.grid_indicies.resize(grid_index_size, 0i32);
+
+    }
+}
 
 /* ideas
 Layer 0 is the grid itself

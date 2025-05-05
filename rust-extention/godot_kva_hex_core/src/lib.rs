@@ -71,6 +71,11 @@ fn get_height_by_sample(x0:i32, y0:i32, x1:i32, y1:i32, width:i32, num_chan:i32,
  */
 #[godot_api]
 impl SpiralHexGrid {
+    #[func]
+    pub fn get_layers(&self)->i32{
+        return NUM_LAYERS as i32;
+    }
+
     /// sets the posision of the super-hexagon, in relation to other super hexagons.
     /// This will impact the origin coordinates, which as used to convert local coordinates to global coordinates.
     #[func]
