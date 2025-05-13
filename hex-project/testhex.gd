@@ -12,14 +12,16 @@ func _ready() -> void:
 	var t1:int;
 	var t2:int;
 	var t3:int;
-	var mesh:ArrayMesh;
+	#var mesh:ArrayMesh;
 
 	testmap = Image.load_from_file("res://assets/maps/iceland_heightmap.png");
 	testmap.decompress();
 	t1 = Time.get_ticks_msec();
 	testhex.from_hightmap(testmap);
 	t2 = Time.get_ticks_msec();
-	mesh = testhex.generate_mesh(Vector3(10, 10, 10), [null, null, null, null, null, null])
+	var mesh = SpiralHexMesh.new();
+	mesh.set_grid(testhex)
+	mesh.regenerate();
 	t3 = Time.get_ticks_msec();
 	print("loading & decompress time: " + str(float(t1 - t0)/1000) + " seconds");
 	print("mapping time: " + str(float(t2 - t1)/1000) + " seconds");

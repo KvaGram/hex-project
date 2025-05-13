@@ -1,4 +1,6 @@
-use num::{Signed, ToPrimitive};
+use std::cmp::max;
+
+use num::{abs, Signed, ToPrimitive};
 const TAU:f64 = 6.2831853071;
 
 ///Hex32 is a common type of Hex, used for common values.
@@ -172,7 +174,7 @@ pub struct Hex<T> {
     pub r:T
 }
 impl<T> Hex<T> where 
-T: Signed + Copy + ToPrimitive{
+T: Signed + Copy + ToPrimitive + Ord{
     pub fn as_array(&self) -> [T;3]{return [self.q, self.r, self.s()]}
     /// the s coordinate.
     pub fn s(&self) -> T {-self.q - self.r}
@@ -195,6 +197,9 @@ T: Signed + Copy + ToPrimitive{
                 3.0/2.0 * r
             )
         }
+    }
+    pub fn get_layer(self) -> T {
+        max(abs(self.s()), max(abs(self.q), abs(self.r)))
     }
 }
 // impl <T> Hex<T> where 

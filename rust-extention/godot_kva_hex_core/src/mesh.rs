@@ -18,6 +18,7 @@ struct SpiralHexMesh {
     //if grid is not defined, layers will used without pulling this from grid.
     //This will result in a mesh without heightdata, meaning it's flat
     grid:Option<Gd<SpiralHexGrid>>,
+    grid_n:[Option<Gd<SpiralHexGrid>>;6],
     //If a grid is not defined, layers can be set manually. A value of 0 will result in just one single tile.
     layers:u8,
     //flags are used to define what surface layers are rendered.
@@ -114,13 +115,14 @@ impl SpiralHexMesh
     fn _get_num_tiles(&self) -> usize {
         3 * (self.layers as usize +1) * self.layers as usize + 1
     }
-
+    #[func]
     fn regenerate(&mut self){
         use kva_hex_core::spiral;
         const VERTS_PER_TILE:usize = 7; // six corners and a center makes 7 vertecies
         const INDICIES_PER_TILE:usize = 6*3; //six triangles make one hexagon, there are 3 vertecies per triangle.
-        let grid_vertex_size = self._get_num_tiles() * VERTS_PER_TILE;
-        let grid_index_size = self._get_num_tiles()* INDICIES_PER_TILE;
+        let num_tiles = self._get_num_tiles();
+        let grid_vertex_size = num_tiles * VERTS_PER_TILE;
+        let grid_index_size = num_tiles * INDICIES_PER_TILE;
 
         self.grid_verticies.resize(grid_vertex_size, Vector3::ZERO);
         self.grid_colors.resize(grid_vertex_size, Color::BLACK);
@@ -134,23 +136,98 @@ impl SpiralHexMesh
                 Vector3{x:s.x / length, y:s.y / 255f32, z:s.z / length}
             }
         };
+        let heightdata: PackedByteArray = self.grid.as_ref().map_or(PackedByteArray::new(), |g|{g.bind().get_heightdata()});
+        for i in 0..num_tiles {
 
-        let heightdata: PackedByteArray = self.grid.as_ref().map_or(PackedByteArray::new(), |g|{Some(g.bind().get_heightdata().clone())});
-        for i in 0..self._get_num_tiles() {
+            let verticies = &mut self.grid_verticies;
+            let colors = &mut self.grid_colors;
+            let indicies = &mut self.grid_indicies;
+
             let color:f64 = (i % 500) as f64 / 500f64;
             let color = Color::from_hsv(color, 1.0, 1.0);
             let hex = spiral::spiral_index_to_hex(i);
-            let height = heightdata.get(i).unwrap_or(0);
+            let height = heightdata.get(i).unwrap_or(0) as f32;
 
             if DEBUG_01{
-                if i as i32 >= self.get_num_tiles() - 20 {
+                if i as i32 >= num_tiles as i32 - 20 {
                     godot_print!("draw - {}, {}, {}", hex.q, hex.r, hex.s());
                 }
             }
+            let center_raw = hex.to_xy(self.flat_north);
+            let center = Vector3{x:center_raw.0, y:height, z:center_raw.1} * scale;
+            let vi_start = i * VERTS_PER_TILE;
+            let ii_start = i * INDICIES_PER_TILE;
+
+            verticies[vi_start] = center;
+            colors[vi_start] = Color::BLACK;
+
+            let mut n_heights = [(255/2) as f32;6];
+            if  self.grid.as_ref().is_some_and(|g| {g.bind().get_layers() <= hex.get_layer()}) {
+                let neighbors = self.grid.as_ref().unwrap().bind().get_neighbors_local(hex);
+                for n in 0..6 {
+                    n_heights[n] = 
+                    if neighbors[n].1.is_some() {
+                        if self.grid_n[neighbors[n].1.unwrap()].is_some(){
+                            let grid_index = neighbors[n].1.unwrap();
+                            let grid = self.grid_n[grid_index].as_ref().unwrap();
+                            //convert coodinates from local grid's space to the other grid's space
+                            let nhex = neighbors[n].0 + self.grid.as_ref().unwrap().bind().origin() - grid.bind().origin();
+                            let nindex = spiral::hex_to_spiral_index(nhex);
+                            assert!(nindex < num_tiles); //If this fails, there is a math error somewhere!
+                            let h = grid.bind().get_heightdata_at(nindex as i32) as f32;
+                            //godot_print!("neighbor {n} is in another grid. value set to {h}.");
+                            h
+                        }
+                        else {
+                            //godot_print!("neighbor {n} is out of bounds. value set to {}.", 0f32);
+                            0f32
+                        }
+                    }
+                    else {
+                        let nindex = spiral::hex_to_spiral_index(neighbors[n].0);
+                        assert!(nindex < num_tiles); //If this fails, there is a math error somewhere!
+                        let h = self.grid.as_ref().unwrap().bind().get_heightdata_at(nindex as i32) as f32;
+                        //godot_print!("neighbor {n} was found as index {nindex}. value set to {h}.");
+                        h
+                    }
+                }
+                //mark neighbor heights as immutable from now on.
+                let n_heights = n_heights;
+                //for each corner
+                for c in 0..6 {
+                    //godot_print!("Printing corner {c}");
+                    let v1 = vi_start + 1 + c;
+                    let v2 = vi_start + 1 + (c+1)%6;
+
+                    let h1 = n_heights[c];
+                    let h2 = n_heights[(c+1)%6];
+                    let h = (height as f32 + h1 + h2) / 3.0;
+                    //godot_print!("height = ({height} + {h1} + {h2}) / 3 =  {h}");
+
+                    let vertex = Vector3{
+                        x: {if self.flat_north {FLAT_UP_CORNERS[c]} else {POINTY_UP_CORNERS[c]}}.0
+                        + center_raw.0,
+                        y: h,
+                        //y: 0.0,
+                        z: {if self.flat_north {FLAT_UP_CORNERS[c]} else {POINTY_UP_CORNERS[c]}}.1
+                        + center_raw.1,
+                    } * scale;
+                    verticies[vi_start + c + 1] = vertex;
+                    colors[vi_start + c + 1] = color;
+
+                    //vertecies[center_i + 1 + c]
+                    indicies[ii_start + c*3 + 0] = vi_start as i32;
+                    indicies[ii_start + c*3 + 1] = v1 as i32;
+                    indicies[ii_start + c*3 + 2] = v2 as i32;
+                    
+                }
+                //test coloring first corner as white
+                colors[vi_start+1] = Color::WHITE;
+            }
+
         }
 
-        //grid must be dropped so that self can be rused for base.
-        drop(grid);
+        //NOTE: drop any variables that may lock self.base or self.base_mut
         self.base_mut().emit_changed();
     }
 }
@@ -255,7 +332,7 @@ impl IMesh for SpiralHexMesh {
     fn init(base: godot::obj::Base < Self::Base >) -> Self {
         
         //TODO: Store base
-		Self {base, grid:None, layers:3u8, flags:RenderFlags::empty(), animate_data:None, flat_north:true, grid_verticies:vec!(), grid_colors:vec!(), grid_indicies:vec!(), size: MeshSize::default()}
+		Self {base, grid:None, grid_n:[None, None, None, None, None, None], layers:3u8, flags:RenderFlags::empty(), animate_data:None, flat_north:true, grid_verticies:vec!(), grid_colors:vec!(), grid_indicies:vec!(), size: MeshSize::default()}
     }
     
     fn to_string(&self) -> godot::builtin::GString {
