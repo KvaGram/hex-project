@@ -5,6 +5,7 @@ use godot::meta::{ClassName, PropertyHintInfo};
 use godot::prelude::*;
 use bitflags::bitflags;
 use crate::SpiralHexGrid;
+use std::collections::HashMap;
 
 const DEBUG_01:bool = false;
 
@@ -24,9 +25,7 @@ struct SpiralHexMesh {
     //flags are used to define what surface layers are rendered.
     flags:RenderFlags,
     //contains data regarding the current animation effect, or lack thereof.
-    animate_data:Option<AnimateData>,
-    //defines the orientation to render the tiles in, using "north" as Z-axis, has a flat surface towards north if true.
-    flat_north:bool,
+//    animate_data:Option<AnimateData>,
     size:MeshSize,
 
 }
@@ -39,29 +38,30 @@ impl Default for MeshSize {
     fn default() -> Self {
         //height-values are in u8 integers between 0 and 255.
         //They should be well scaled to fit the situation.
-        MeshSize::Fixed(Vector3{x:1.0, y:0.004, z:1.0})
+        MeshSize::Scaled(Vector3{x:1.0, y:0.004, z:1.0})
     }
 }
 
 ///stores data regarding an active animation. This includes a copy of data before animation, the current animation step, what tiles are being moved, origin and destination tiles of the animation, the geometry data of the moving geometry,
 /// and what else I can't think of while prototyping this structure right now :) .
-struct AnimateData {
-    step:AniStep
-}
+// struct AnimateData {
+//     step:AniStep
+// }
 ///Each step holds a time value, and an end value, messured in microseconds. These are used to lerp values for animation. Once t exceeds e, the animation is advanced to the next step. The excess value of t above e of the previus step is added to the next value t. This ensures consistant animation length.
 /// Lift: the tile(s) lifts from the grid. EndLift: Short pause. Move: the tiles move to their target destination. EndMove: short pause. Drop: Tiles drop down to their destination. EndDrop: short pause. Morph: tile height adjusts to the new geometry as tile data changes End: short pause. None  - No animation is running.
-enum AniStep{None, Lift{t:i32, e:i32}, EndLift{t:i32, e:i32}, Move{t:i32, e:i32}, EndMove{t:i32, e:i32}, Drop{t:i32, e:i32}, EndDrop{t:i32, e:i32}, Morph{t:i32, e:i32}, End{i:i32, e:i32}}
+//enum AniStep{None, Lift{t:i32, e:i32}, EndLift{t:i32, e:i32}, Move{t:i32, e:i32}, EndMove{t:i32, e:i32}, Drop{t:i32, e:i32}, EndDrop{t:i32, e:i32}, Morph{t:i32, e:i32}, End{i:i32, e:i32}}
 
 bitflags! {
     pub struct RenderFlags: u32 {
-        const READY  =      1 << 0;
-        const WALL_1 =      1 << 1;
+        const REFRESH =      1 << 0; //set when the mesh needs to regenerate due to changed data.
+        const WALL_1 =      1 << 1; // whatever to render walls for each directions, adding depth to the hexgrid.
         const WALL_2 =      1 << 2;
         const WALL_3 =      1 << 3;
         const WALL_4 =      1 << 4;
         const WALL_5 =      1 << 5;
         const WALL_6 =      1 << 6;
-        const ANIMATING =   1 << 7;
+        const FLAT_NORTH =  1 << 8; //defines the orientation to render the tiles in, using "north" as Z-axis, has a flat surface towards north if true.
+        const ANIMATING =   1 << 9;
 
         // The source may set any bits
         const _ = !0;
@@ -94,7 +94,7 @@ impl SpiralHexMesh
             if gridlength.is_some() && gridlength.unwrap() != new_layers {
                 godot_warn!("SpiralHexMesh already have a defined grid with a length of {}. Setting layers manually means less of the grid is rendered in the mesh.", gridlength.unwrap());
             }
-            self.regenerate();
+            self.need_refresh();
             return true;
         }
     }
@@ -115,6 +115,25 @@ impl SpiralHexMesh
     fn _get_num_tiles(&self) -> usize {
         3 * (self.layers as usize +1) * self.layers as usize + 1
     }
+    /// sets the refresh flag, and calls regenerate_deferred, deferred. 
+    fn need_refresh(&mut self){
+        self.flags.set(RenderFlags::REFRESH, true);
+        self.base_mut().call_deferred("regenerate_deferred", &[]);
+        
+    }
+    ///runs regenerate if flag REFRESH is set.
+    ///Only meant to be called deferred. Do not call directly.
+    /// Shields regenerate from being called multible times per frame.
+    #[func]
+    fn regenerate_deferred(&mut self)
+    {
+        if self.flags.contains(RenderFlags::REFRESH) {
+            self.regenerate();
+        }
+    }
+    /// Regenerate the base grid-mesh
+    /// Potentially expensive, only call when needed.
+    /// Do not call deferred. Use regenerate_deferred instead for deferred calls.
     #[func]
     fn regenerate(&mut self){
         use kva_hex_core::spiral;
@@ -153,7 +172,7 @@ impl SpiralHexMesh
                     godot_print!("draw - {}, {}, {}", hex.q, hex.r, hex.s());
                 }
             }
-            let center_raw = hex.to_xy(self.flat_north);
+            let center_raw = hex.to_xy(self.flags.contains(RenderFlags::FLAT_NORTH));
             let center = Vector3{x:center_raw.0, y:height, z:center_raw.1} * scale;
             let vi_start = i * VERTS_PER_TILE;
             let ii_start = i * INDICIES_PER_TILE;
@@ -205,11 +224,11 @@ impl SpiralHexMesh
                     //godot_print!("height = ({height} + {h1} + {h2}) / 3 =  {h}");
 
                     let vertex = Vector3{
-                        x: {if self.flat_north {FLAT_UP_CORNERS[c]} else {POINTY_UP_CORNERS[c]}}.0
+                        x: {if self.flags.contains(RenderFlags::FLAT_NORTH) {FLAT_UP_CORNERS[c]} else {POINTY_UP_CORNERS[c]}}.0
                         + center_raw.0,
                         y: h,
                         //y: 0.0,
-                        z: {if self.flat_north {FLAT_UP_CORNERS[c]} else {POINTY_UP_CORNERS[c]}}.1
+                        z: {if self.flags.contains(RenderFlags::FLAT_NORTH) {FLAT_UP_CORNERS[c]} else {POINTY_UP_CORNERS[c]}}.1
                         + center_raw.1,
                     } * scale;
                     verticies[vi_start + c + 1] = vertex;
@@ -226,7 +245,7 @@ impl SpiralHexMesh
             }
 
         }
-
+        self.flags.set(RenderFlags::REFRESH,false);
         //NOTE: drop any variables that may lock self.base or self.base_mut
         self.base_mut().emit_changed();
     }
@@ -244,7 +263,7 @@ layers 15 and 16 are reserved for bedrock/floors covering "gaps" from aniamted g
 
 #[godot_api]
 impl IMesh for SpiralHexMesh {
-	///Number of contigues surfaces in the mesh.
+    ///Number of contigues surfaces in the mesh.
 	fn get_surface_count(&self,) -> i32 {
         1
     }
@@ -252,7 +271,7 @@ impl IMesh for SpiralHexMesh {
     fn surface_get_array_len(&self, index: i32,) -> i32 {
         match index {
             //TODO: get number of vertecies in base grid
-            0 => {if self.flags.contains(RenderFlags::READY) { 0 } else { 0 }}
+            0 => self.grid_verticies.len() as i32,
             1 => {if self.flags.contains(RenderFlags::WALL_1){ 0 } else { 0 }}
             2 => {if self.flags.contains(RenderFlags::WALL_2){ 0 } else { 0 }}
             3 => {if self.flags.contains(RenderFlags::WALL_3){ 0 } else { 0 }}
@@ -268,15 +287,35 @@ impl IMesh for SpiralHexMesh {
 	///Number of indecies per surface
     fn surface_get_array_index_len(&self, index: i32,) -> i32 {
         if index == 0{
-			0 //TODO fetch number of vertecies 
+			self.grid_indicies.len() as i32
 		} else {
 			0
 		}
     }
 	///get the full arrays of mesh data. Vertex, UV, indicies, etc. For given surface.
-    fn surface_get_arrays(&self, _index: i32,) -> VariantArray {
-		//TODO pack relevant data and return copy.
-		VariantArray::new()
+    fn surface_get_arrays(&self, index: i32,) -> VariantArray {
+        use godot::classes::mesh::ArrayType;
+        //structe conststs of mesh arrays according to godot documentation
+        let vertex_index:usize = ArrayType::VERTEX.ord() as usize;
+        let color_index:usize = ArrayType::COLOR.ord() as usize;
+        let indicies_index:usize = ArrayType::INDEX.ord() as usize;
+        let packed_array_size:usize = ArrayType::MAX.ord() as usize;
+
+        //TODO pack relevant data and return copy.
+		let mut ret = VariantArray::new();
+        ret.resize(packed_array_size, &Variant::nil());
+        ret.set(vertex_index, &PackedVector3Array::from(self.grid_verticies.clone()).to_variant());
+        match index{
+            0 => {
+                ret.set(color_index, &PackedColorArray::from(self.grid_colors.clone()).to_variant());
+                ret.set(indicies_index, &PackedInt32Array::from(self.grid_indicies.clone()).to_variant());
+            }
+            _ => {
+                ret.set(color_index, &PackedColorArray::new().to_variant());
+                ret.set(indicies_index, &PackedVector3Array::new().to_variant());
+            }
+        }
+        ret
     }
 
 	///gets data relevant to animations. This likely does not apply for this use.
@@ -292,13 +331,13 @@ impl IMesh for SpiralHexMesh {
 	///defines the format of the arrays, utalizing bitflags to set properties.
     fn surface_get_format(&self, _index: i32,) -> u32 {
 		//NOTE indexed arrays, using vertex colors instead of UVs.
-		(ArrayFormat::VERTEX | ArrayFormat::INDEX | ArrayFormat::COLOR).ord() as u32
+		(ArrayFormat::VERTEX.ord() | ArrayFormat::INDEX.ord() | ArrayFormat::COLOR.ord()) as u32
     }
 
     fn surface_get_primitive_type(&self, _index: i32,) -> u32 {
-        if _index > 0 {0}
-        else {0}
-		
+        //use godot::classes::mesh::PrimitiveType;
+        //PrimitiveType::TRIANGLES.ord() as u32
+        3u32
     }
 
     fn surface_set_material(&mut self, _index: i32, _material: Option< Gd< godot::classes::Material > >,) {
@@ -321,18 +360,28 @@ impl IMesh for SpiralHexMesh {
 
     fn set_blend_shape_name(&mut self, _index: i32, _name: StringName,) {
         //NOTE: consider if blend shapes may be of any use to this mesh. doupt it.
+        //self.need_refresh();
 
     }
 	///Defines a box where the entire mesh resides. Used for automatic culling
     fn get_aabb(&self,) -> Aabb {
-		//TODO calculate the Axis-Aligned Bounding Box of the mesh.
-		Aabb { position: Vector3::ZERO, size: Vector3::ZERO }
+        match self.size{
+            MeshSize::Fixed(s) => Aabb { position: Vector3 { x: -s.x/2f32, y: -s.y/2f32, z: -s.z/2f32 }, size:s},
+            MeshSize::Scaled(s) =>{
+                let max = Vector3{x:(self.layers as f32)*s.x, y:255f32*s.y, z:(self.layers as f32)*s.z};
+                let min = Vector3{x:-(self.layers as f32)*s.x, y:0f32, z:-(self.layers as f32)*s.z};
+                Aabb::from_corners(max, min)
+                //TODO calculate the Aabb
+                //Aabb{position: Vector3::ZERO, size: Vector3::ONE}
+            }
+        }
+
     }
     
     fn init(base: godot::obj::Base < Self::Base >) -> Self {
         
         //TODO: Store base
-		Self {base, grid:None, grid_n:[None, None, None, None, None, None], layers:3u8, flags:RenderFlags::empty(), animate_data:None, flat_north:true, grid_verticies:vec!(), grid_colors:vec!(), grid_indicies:vec!(), size: MeshSize::default()}
+		Self {base, grid:None, grid_n:[None, None, None, None, None, None], layers:3u8, flags:RenderFlags::empty(), /*animate_data:None,*/ grid_verticies:vec!(), grid_colors:vec!(), grid_indicies:vec!(), size: MeshSize::default()}
     }
     
     fn to_string(&self) -> godot::builtin::GString {
@@ -350,9 +399,16 @@ impl IMesh for SpiralHexMesh {
 		None
     }
     
-    fn set_property(&mut self, _property: StringName, _value: Variant) -> bool {
-        //No properties to set for now.
-		false
+    fn set_property(&mut self, property: StringName, value: Variant) -> bool {
+        if property == StringName::from("layers"){
+            //attempt to get i32 from Variant
+            let value = i32::try_from_variant(&value);
+            //attempt to set layers from value (set_layers may trigger need_refresh)
+            value.is_ok_and(|value| self.set_layers(value))
+        }
+        else {
+            false
+        }
     }
     
     fn get_property_list(&mut self) -> Vec< godot::meta::PropertyInfo > {
@@ -360,6 +416,7 @@ impl IMesh for SpiralHexMesh {
         vec![
             Info{property_name:StringName::from("layers"), variant_type:VariantType::INT, class_name:ClassName::none(), usage: PropertyUsageFlags::DEFAULT,
                 hint_info:PropertyHintInfo{hint_string:GString::from("minimum 0, maximum 255. Restricted by unsigned 8 bit integer. This is the number of layers to render. Automatically set by grid(if defined), can be overwritten."), hint: PropertyHint::RANGE}}
+            
             ]
         //TODO: list all properties that I may want to view or edit from inspector.
     }
@@ -374,7 +431,7 @@ impl IMesh for SpiralHexMesh {
     }
     
     fn setup_local_to_scene(&mut self,) {
-        //Nothing needs doing. Maybe. I donno...
+        //Nothing needs doing. Maybe. I donno... Maybe clone material(s)?
     }
 }
 

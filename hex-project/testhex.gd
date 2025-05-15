@@ -30,40 +30,34 @@ func _ready() -> void:
 	
 	#diagnose the mesh
 	
-	#var aabb = mesh.get_aabb();
-	#print("→ Mesh AABB position = ", aabb.position)
-	#print("→ Mesh AABB size     = ", aabb.size)
+	var aabb = mesh.get_aabb();
+	print("→ Mesh AABB position = ", aabb.position)
+	print("→ Mesh AABB size     = ", aabb.size)
 	
 	
-	#var arrs = mesh.surface_get_arrays(0)
-	#var verts = arrs[Mesh.ARRAY_VERTEX];
-	#var inds = arrs[Mesh.ARRAY_INDEX];
-	#var cols = arrs[Mesh.ARRAY_COLOR];
-	#print("→ FINAL VERTEX COUNT = %d" % verts.size())
-	#print("→ FINAL INDEX  COUNT = %d" % inds.size())
-	#print("→ FINAL COLOR  COUNT = %d" % cols.size())
-	#var mdt = MeshDataTool.new();
-	#var err = mdt.create_from_surface(mesh,0);
-	#if err == OK:
-		#print("→ MeshDataTool face_count = %d" % mdt.get_face_count());
-	#else:
-		#printerr("MeshDataTool failed with error %d" % err);
-	#
-	#if verts.size() >= 14:
-		#var start_v = verts.size() - 14
-		#print("\n— last 14 VERTICES (2 centers + 12 corners) —")
-		#for i in range(start_v, verts.size()):
-			#print("   VERT[%2d] = %s" % [i, verts[i]])
-	#else:
-		#push_error("Not enough vertices to dump tail!")
-#
-	#if inds.size() >= 36:
-		#var start_i = inds.size() - 36
-		#print("\n— last 36 INDICES (12 triangles) —")
-		#for i in range(start_i, inds.size()):
-			#print("   IDX[%3d] = %d" % [i, inds[i]])
-	#else:
-		#push_error("Not enough indices to dump tail!")
+	var arrs = mesh.surface_get_arrays(0)
+	var verts = arrs[Mesh.ARRAY_VERTEX];
+	var inds = arrs[Mesh.ARRAY_INDEX];
+	var cols = arrs[Mesh.ARRAY_COLOR];
+	print("→ FINAL VERTEX COUNT = %d" % verts.size())
+	print("→ FINAL INDEX  COUNT = %d" % inds.size())
+	print("→ FINAL COLOR  COUNT = %d" % cols.size())
+	
+	if verts.size() >= 14:
+		var start_v = verts.size() - 14
+		print("\n— last 14 VERTICES (2 centers + 12 corners) —")
+		for i in range(start_v, verts.size()):
+			print("   VERT[%2d] = %s" % [i, verts[i]])
+	else:
+		push_error("Not enough vertices to dump tail!")
+
+	if inds.size() >= 36:
+		var start_i = inds.size() - 36
+		print("\n— last 36 INDICES (12 triangles) —")
+		for i in range(start_i, inds.size()):
+			print("   IDX[%3d] = %d" % [i, inds[i]])
+	else:
+		push_error("Not enough indices to dump tail!")
 	
 	var meshRender = MeshInstance3D.new();
 	var material = StandardMaterial3D.new();
