@@ -1,5 +1,6 @@
 use godot::classes::mesh::ArrayFormat;
-use godot::classes::{IMesh, Mesh};
+use godot::classes::rendering_server::PrimitiveType;
+use godot::classes::{IMesh, Mesh, RenderingServer};
 use godot::global::{PropertyHint, PropertyUsageFlags};
 use godot::meta::{ClassName, PropertyHintInfo};
 use godot::prelude::*;
@@ -7,7 +8,9 @@ use bitflags::bitflags;
 use crate::SpiralHexGrid;
 use std::collections::HashMap;
 
-const DEBUG_01:bool = false;
+const DEBUG_01:bool = true;
+const DEBUG_02:bool = true;
+
 
 #[derive(GodotClass)]
 #[class(base=Mesh)]
@@ -27,6 +30,7 @@ struct SpiralHexMesh {
     //contains data regarding the current animation effect, or lack thereof.
 //    animate_data:Option<AnimateData>,
     size:MeshSize,
+    rid:Rid
 
 }
 
@@ -71,6 +75,14 @@ bitflags! {
 #[godot_api]
 impl SpiralHexMesh
 {
+    #[func]
+    fn get_rid(&self)->Rid{
+        self.rid
+    }
+    #[func]
+    fn _get_rid(&self)->Rid{
+        self.rid
+    }
     #[func]
     fn set_layers(&mut self, new_layers:i32)->bool {
         let gridlength = {if self.grid.is_none(){None} else {
@@ -131,6 +143,7 @@ impl SpiralHexMesh
             self.regenerate();
         }
     }
+
     /// Regenerate the base grid-mesh
     /// Potentially expensive, only call when needed.
     /// Do not call deferred. Use regenerate_deferred instead for deferred calls.
@@ -169,7 +182,7 @@ impl SpiralHexMesh
 
             if DEBUG_01{
                 if i as i32 >= num_tiles as i32 - 20 {
-                    godot_print!("draw - {}, {}, {}", hex.q, hex.r, hex.s());
+                    godot_print!("draw tile {} - {}, {}, {}",i, hex.q, hex.r, hex.s());
                 }
             }
             let center_raw = hex.to_xy(self.flags.contains(RenderFlags::FLAT_NORTH));
@@ -178,14 +191,15 @@ impl SpiralHexMesh
             let ii_start = i * INDICIES_PER_TILE;
 
             verticies[vi_start] = center;
+            if DEBUG_02{
+                godot_print!("vertex {} - {}", vi_start, center);
+            }
             colors[vi_start] = Color::BLACK;
-
             let mut n_heights = [(255/2) as f32;6];
             if  self.grid.as_ref().is_some_and(|g| {g.bind().get_layers() <= hex.get_layer()}) {
                 let neighbors = self.grid.as_ref().unwrap().bind().get_neighbors_local(hex);
                 for n in 0..6 {
-                    n_heights[n] = 
-                    if neighbors[n].1.is_some() {
+                    n_heights[n] = if neighbors[n].1.is_some() {
                         if self.grid_n[neighbors[n].1.unwrap()].is_some(){
                             let grid_index = neighbors[n].1.unwrap();
                             let grid = self.grid_n[grid_index].as_ref().unwrap();
@@ -210,44 +224,82 @@ impl SpiralHexMesh
                         h
                     }
                 }
-                //mark neighbor heights as immutable from now on.
-                let n_heights = n_heights;
-                //for each corner
-                for c in 0..6 {
-                    //godot_print!("Printing corner {c}");
-                    let v1 = vi_start + 1 + c;
-                    let v2 = vi_start + 1 + (c+1)%6;
-
-                    let h1 = n_heights[c];
-                    let h2 = n_heights[(c+1)%6];
-                    let h = (height as f32 + h1 + h2) / 3.0;
-                    //godot_print!("height = ({height} + {h1} + {h2}) / 3 =  {h}");
-
-                    let vertex = Vector3{
-                        x: {if self.flags.contains(RenderFlags::FLAT_NORTH) {FLAT_UP_CORNERS[c]} else {POINTY_UP_CORNERS[c]}}.0
-                        + center_raw.0,
-                        y: h,
-                        //y: 0.0,
-                        z: {if self.flags.contains(RenderFlags::FLAT_NORTH) {FLAT_UP_CORNERS[c]} else {POINTY_UP_CORNERS[c]}}.1
-                        + center_raw.1,
-                    } * scale;
-                    verticies[vi_start + c + 1] = vertex;
-                    colors[vi_start + c + 1] = color;
-
-                    //vertecies[center_i + 1 + c]
-                    indicies[ii_start + c*3 + 0] = vi_start as i32;
-                    indicies[ii_start + c*3 + 1] = v1 as i32;
-                    indicies[ii_start + c*3 + 2] = v2 as i32;
-                    
-                }
-                //test coloring first corner as white
-                colors[vi_start+1] = Color::WHITE;
             }
+            //mark neighbor heights as immutable from now on.
+            let n_heights = n_heights;
+            //for each corner
+            for c in 0..6 {
+                //godot_print!("Printing corner {c}");
+                let v1 = vi_start + 1 + c;
+                let v2 = vi_start + 1 + (c+1)%6;
 
+                let h1 = n_heights[c];
+                let h2 = n_heights[(c+1)%6];
+                let h = (height as f32 + h1 + h2) / 3.0;
+                //godot_print!("height = ({height} + {h1} + {h2}) / 3 =  {h}");
+
+                let vertex = Vector3{
+                    x: {if self.flags.contains(RenderFlags::FLAT_NORTH) {FLAT_UP_CORNERS[c]} else {POINTY_UP_CORNERS[c]}}.0
+                    + center_raw.0,
+                    y: h,
+                    //y: 0.0,
+                    z: {if self.flags.contains(RenderFlags::FLAT_NORTH) {FLAT_UP_CORNERS[c]} else {POINTY_UP_CORNERS[c]}}.1
+                    + center_raw.1,
+                } * scale;
+                verticies[vi_start + c + 1] = vertex;
+                if DEBUG_02{
+                    godot_print!("vertex {} - {}", vi_start + c + 1, vertex);
+                }
+                colors[vi_start + c + 1] = color;
+
+                //vertecies[center_i + 1 + c]
+                indicies[ii_start + c*3 + 0] = vi_start as i32;
+                indicies[ii_start + c*3 + 1] = v1 as i32;
+                indicies[ii_start + c*3 + 2] = v2 as i32;
+                if DEBUG_02{
+                    godot_print!("- indecies ({} {} {}) -> {}, {} - {}",
+                    ii_start + c*3 + 0,ii_start + c*3 + 1,ii_start + c*3 + 2,
+                    vi_start, v1, v2);
+                }
+                
+            }
+            //test coloring first corner as white
+            colors[vi_start+1] = Color::WHITE;
         }
         self.flags.set(RenderFlags::REFRESH,false);
+        self.update_renderer();
         //NOTE: drop any variables that may lock self.base or self.base_mut
         self.base_mut().emit_changed();
+    }
+    fn update_renderer(&mut self){
+        let mut rs = RenderingServer::singleton();
+        rs.mesh_clear(self.rid);
+
+        use godot::classes::mesh::ArrayType;
+        //structe conststs of mesh arrays according to godot documentation
+        let vertex_index:usize = ArrayType::VERTEX.ord() as usize;
+        let color_index:usize = ArrayType::COLOR.ord() as usize;
+        let indicies_index:usize = ArrayType::INDEX.ord() as usize;
+        let packed_array_size:usize = ArrayType::MAX.ord() as usize;
+
+        // let mut data = [&Variant::nil(),&Variant::nil(),&Variant::nil(),&Variant::nil(),
+        // &Variant::nil(),&Variant::nil(),&Variant::nil(),&Variant::nil(),&Variant::nil(),&Variant::nil(),
+        // &Variant::nil(),&Variant::nil(),&Variant::nil()];
+        // data[vertex_index] = &PackedVector3Array::from(self.grid_verticies.clone()).to_variant();
+        // data[color_index] = &PackedColorArray::from(self.grid_colors.clone()).to_variant();
+        // data[indicies_index] = &PackedInt32Array::from(self.grid_indicies.clone()).to_variant();
+
+        //TODO pack relevant data and return copy.
+		let mut data = VariantArray::new();
+        data.resize(packed_array_size, &Variant::nil());
+        data.set(vertex_index, &PackedVector3Array::from(self.grid_verticies.clone()).to_variant());
+        data.set(color_index, &PackedColorArray::from(self.grid_colors.clone()).to_variant());
+        data.set(indicies_index, &PackedInt32Array::from(self.grid_indicies.clone()).to_variant());
+
+        rs.mesh_add_surface_from_arrays(self.rid,
+            PrimitiveType::TRIANGLES,
+            &data
+        );
     }
 }
 
@@ -294,37 +346,18 @@ impl IMesh for SpiralHexMesh {
     }
 	///get the full arrays of mesh data. Vertex, UV, indicies, etc. For given surface.
     fn surface_get_arrays(&self, index: i32,) -> VariantArray {
-        use godot::classes::mesh::ArrayType;
-        //structe conststs of mesh arrays according to godot documentation
-        let vertex_index:usize = ArrayType::VERTEX.ord() as usize;
-        let color_index:usize = ArrayType::COLOR.ord() as usize;
-        let indicies_index:usize = ArrayType::INDEX.ord() as usize;
-        let packed_array_size:usize = ArrayType::MAX.ord() as usize;
-
-        //TODO pack relevant data and return copy.
-		let mut ret = VariantArray::new();
-        ret.resize(packed_array_size, &Variant::nil());
-        ret.set(vertex_index, &PackedVector3Array::from(self.grid_verticies.clone()).to_variant());
-        match index{
-            0 => {
-                ret.set(color_index, &PackedColorArray::from(self.grid_colors.clone()).to_variant());
-                ret.set(indicies_index, &PackedInt32Array::from(self.grid_indicies.clone()).to_variant());
-            }
-            _ => {
-                ret.set(color_index, &PackedColorArray::new().to_variant());
-                ret.set(indicies_index, &PackedVector3Array::new().to_variant());
-            }
-        }
-        ret
+        RenderingServer::singleton().mesh_surface_get_arrays(self.rid, index)
     }
 
 	///gets data relevant to animations. This likely does not apply for this use.
-    fn surface_get_blend_shape_arrays(&self, _index: i32,) -> Array< VariantArray > {
+    fn surface_get_blend_shape_arrays(&self, index: i32,) -> Array< VariantArray > {
+        RenderingServer::singleton().mesh_surface_get_blend_shape_arrays(self.rid, index)
         // NOTE: consider if this could be used for something.
-		Array::<VariantArray>::new()
+		//Array::<VariantArray>::new()
     }
 	///gets the level of detail mesh data
     fn surface_get_lods(&self, _index: i32,) -> Dictionary {
+        //RenderingServer::singleton().mesh_get_lod
 		// TODO define simplefied LOD meshes
 		return Dictionary::new()
     }
@@ -379,9 +412,8 @@ impl IMesh for SpiralHexMesh {
     }
     
     fn init(base: godot::obj::Base < Self::Base >) -> Self {
-        
-        //TODO: Store base
-		Self {base, grid:None, grid_n:[None, None, None, None, None, None], layers:3u8, flags:RenderFlags::empty(), /*animate_data:None,*/ grid_verticies:vec!(), grid_colors:vec!(), grid_indicies:vec!(), size: MeshSize::default()}
+        let rid = RenderingServer::singleton().mesh_create();
+		Self {base, grid:None, grid_n:[None, None, None, None, None, None], layers:3u8, flags:RenderFlags::empty(), /*animate_data:None,*/ grid_verticies:vec!(), grid_colors:vec!(), grid_indicies:vec!(), size: MeshSize::default(), rid}
     }
     
     fn to_string(&self) -> godot::builtin::GString {
@@ -394,9 +426,9 @@ impl IMesh for SpiralHexMesh {
         //do nothing for now.
     }
     
-    fn get_property(&self, _property: StringName) -> Option< Variant > {
-        //No properties to fetch for now.
-		None
+    fn get_property(&self, property: StringName) -> Option< Variant > {
+        if property == "layers".into() {Some(Variant::from(self.layers))}
+        else {None}
     }
     
     fn set_property(&mut self, property: StringName, value: Variant) -> bool {

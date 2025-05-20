@@ -4,23 +4,24 @@ var orient:HexUtil.TileOrient = HexUtil.TileOrient.FLAT
 var testhex:SpiralHexGrid;
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
-	testhex = SpiralHexGrid.new();
-	var layers:int = 10;
-	var size:int = (3 * (layers+1) * layers) + 1;
-	var testmap:Image;
+	#testhex = SpiralHexGrid.new();
+	#var layers:int = 10;
+	#var size:int = (3 * (layers+1) * layers) + 1;
+	#var testmap:Image;
 	var t0:int = Time.get_ticks_msec();
 	var t1:int;
 	var t2:int;
 	var t3:int;
 	#var mesh:ArrayMesh;
 
-	testmap = Image.load_from_file("res://assets/maps/iceland_heightmap.png");
-	testmap.decompress();
+	#testmap = Image.load_from_file("res://assets/maps/iceland_heightmap.png");
+	#testmap.decompress();
 	t1 = Time.get_ticks_msec();
-	testhex.from_hightmap(testmap);
+	#testhex.from_hightmap(testmap);
 	t2 = Time.get_ticks_msec();
 	var mesh = SpiralHexMesh.new();
-	mesh.set_grid(testhex)
+	#mesh.set_grid(testhex)
+	mesh.set_layers(2);
 	mesh.regenerate();
 	t3 = Time.get_ticks_msec();
 	print("loading & decompress time: " + str(float(t1 - t0)/1000) + " seconds");
@@ -65,6 +66,8 @@ func _ready() -> void:
 	meshRender.material_override = material;
 	add_child(meshRender);
 	meshRender.mesh = mesh;
+	meshRender.set_base(mesh.get_rid())
+	print(meshRender.get_base())
 		
 	#var verts:PackedVector3Array = testhex.test_draw_hex(true);
 	#var height:PackedByteArray = testhex.get_heightdata();
