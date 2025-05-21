@@ -280,7 +280,7 @@ pub mod spiral
             if value <= 0 {return spiral;} //index 0 is the origin/center tile.
 
             //Layer around the origin tile.
-            spiral.layer = (((12 * value + 9).sqrt() - 3) as f32 /6.0).ceil().to_i32()
+            spiral.layer = (( ((12 * value + 9) as f32).sqrt() - 3f32) /6f32).ceil().to_i32()
                 .expect("spiral.layer as f32 is now expected to be above 0 and rounded up to nearest integer.");
             
             //The tile's index, minus number of tiles before this layer.

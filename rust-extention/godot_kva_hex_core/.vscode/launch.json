@@ -9,13 +9,13 @@
 			"type": "lldb",
 			"request": "launch",
 			"linux": {
-				"cwd": "${workspaceFolder}",
-				"preLaunchTask": "rust: cargo build",
-                "program": "...", //TODO: set this
+				"cwd": "${workspaceFolder}/../../hex-project",//"${workspaceFolder}",
+				//"preLaunchTask": "rust: cargo build",
+                "program": "/home/lars/.var/app/io.github.MakovWait.Godots/data/godot/app_userdata/Godots/versions/Godot_v4_4_1-stable_linux_x86_64/Godot_v4.4.1-stable_linux.x86_64", 
 				"args": [
 					//"-e", // run editor (remove this to launch the scene directly)
 					"-w", // windowed mode
-					"--path ${workspaceFolder}/../../hex-project"
+					//"--path ${workspaceFolder}/../../hex-project"
 				],
             },
 			"windows": {
