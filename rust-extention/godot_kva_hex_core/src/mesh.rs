@@ -8,8 +8,8 @@ use bitflags::bitflags;
 use crate::SpiralHexGrid;
 use std::collections::HashMap;
 
-const DEBUG_01:bool = true;
-const DEBUG_02:bool = true;
+const DEBUG_01:bool = false;
+const DEBUG_02:bool = false;
 
 
 #[derive(GodotClass)]
@@ -42,7 +42,7 @@ impl Default for MeshSize {
     fn default() -> Self {
         //height-values are in u8 integers between 0 and 255.
         //They should be well scaled to fit the situation.
-        MeshSize::Scaled(Vector3{x:1.0, y:0.004, z:1.0})
+        MeshSize::Scaled(Vector3{x:1.0, y:0.04, z:1.0})
     }
 }
 
@@ -169,7 +169,9 @@ impl SpiralHexMesh
             }
         };
         let heightdata: PackedByteArray = self.grid.as_ref().map_or(PackedByteArray::new(), |g|{g.bind().get_heightdata()});
+        //godot_print!("heights: {}", heightdata.to_string());
         for i in 0..num_tiles {
+        //for i in 0..3 {
 
             let verticies = &mut self.grid_verticies;
             let colors = &mut self.grid_colors;
@@ -196,7 +198,7 @@ impl SpiralHexMesh
             }
             colors[vi_start] = Color::BLACK;
             let mut n_heights = [(255/2) as f32;6];
-            if  self.grid.as_ref().is_some_and(|g| {g.bind().get_layers() <= hex.get_layer()}) {
+            if  self.grid.as_ref().is_some_and(|g| {g.bind().get_layers() >= hex.get_layer()}) {
                 let neighbors = self.grid.as_ref().unwrap().bind().get_neighbors_local(hex);
                 for n in 0..6 {
                     n_heights[n] = if neighbors[n].1.is_some() {
@@ -236,7 +238,7 @@ impl SpiralHexMesh
                 let h1 = n_heights[c];
                 let h2 = n_heights[(c+1)%6];
                 let h = (height as f32 + h1 + h2) / 3.0;
-                //godot_print!("height = ({height} + {h1} + {h2}) / 3 =  {h}");
+                //godot_print!("tile {i}, corner {c}: height = ({height} + {h1} + {h2}) / 3 =  {h}");
 
                 let vertex = Vector3{
                     x: {if self.flags.contains(RenderFlags::FLAT_NORTH) {FLAT_UP_CORNERS[c]} else {POINTY_UP_CORNERS[c]}}.0
@@ -474,12 +476,12 @@ const FLAT_UP_CORNERS: [(f32, f32); 6] = [
     (-0.500, 0.866),     // 120°: (-0.5, √3/2)
     (-1.000, 0.000),     // 180°: (-1, 0)
     (-0.500, -0.866),    // 240°: (-0.5, -√3/2)
-];
+    ];
 const POINTY_UP_CORNERS: [(f32, f32); 6] = [
+    (0.000, -1.000), 
     (0.866, -0.500), 
     (0.866, 0.500), 
     (0.000, 1.000), 
     (-0.866, 0.500), 
     (-0.866, -0.500),  
-    (0.000, -1.000), 
 ];

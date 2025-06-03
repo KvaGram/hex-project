@@ -11,7 +11,7 @@ use kva_hex_core::spiral;
 use kva_hex_core::Hex32;
 
 //Number of layers in a spiral grid.
-const NUM_LAYERS:u8 = 2;
+const NUM_LAYERS:u8 = 255;
 //number of tiles in a spiral grid.
 //at u8::MAX this would be 195'841 tiles.
 const NUM_TILES:usize = 3 * (NUM_LAYERS as usize +1) * NUM_LAYERS as usize + 1;
@@ -138,9 +138,9 @@ impl SpiralHexGrid {
         for i in 0..NUM_TILES{
             let h: Hex32 = spiral::spiral_index_to_hex(i);
             //TEST - remove me
-            if i as i32 >= NUM_TILES as i32 - 20 {
-                godot_print!("height - {}, {}, {}", h.q, h.r, h.s());
-            }
+            // if i as i32 >= NUM_TILES as i32 - 20 {
+            //     godot_print!("height - {}, {}, {}", h.q, h.r, h.s());
+            // }
             let mut x: f32;
             let mut y: f32;
             (x, y) = h.to_xy(true);
@@ -305,9 +305,9 @@ impl SpiralHexGrid {
             let hex = spiral::spiral_index_to_hex(i);
 
             //TEST - remove me
-            if i as i32 >= NUM_TILES as i32 - 20 {
-                godot_print!("draw - {}, {}, {}", hex.q, hex.r, hex.s());
-            }
+            // if i as i32 >= NUM_TILES as i32 - 20 {
+            //     godot_print!("draw - {}, {}, {}", hex.q, hex.r, hex.s());
+            // }
 
             let height = self.data[i].height as f32;
             let center_raw = hex.to_xy(FLAT);
