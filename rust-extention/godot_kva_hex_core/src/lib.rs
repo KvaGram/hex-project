@@ -11,28 +11,30 @@ use kva_hex_core::spiral;
 use kva_hex_core::Hex32;
 
 //Number of layers in a spiral grid.
-const NUM_LAYERS:u8 = 255;
+//const NUM_LAYERS:u8 = 255;
 //number of tiles in a spiral grid.
 //at u8::MAX this would be 195'841 tiles.
-const NUM_TILES:usize = 3 * (NUM_LAYERS as usize +1) * NUM_LAYERS as usize + 1;
 //orientation of tiles. Flat means a flat edge towards 'north'. False value means pointy edge towards 'north'.
 const FLAT:bool = true; 
 
 pub mod mesh;
+
 #[derive(GodotClass)]
 #[class(base=RefCounted)]
 struct SpiralHexGrid {
-    data:[HexContent; NUM_TILES],
+    //data:[HexContent; NUM_TILES],
+    data:Vec<HexContent>,
     super_pos:Hex32, //coordinates of this grid within a grid of grids.
+    num_layers:u8
 }
 
 #[godot_api]
 impl IRefCounted for SpiralHexGrid {
     fn init(_base: godot::obj::Base < Self::Base >) -> Self {
-        godot_print!("Number of layers: {NUM_LAYERS} - Number of tiles: {NUM_TILES}");
+        //godot_print!("Number of layers: {NUM_LAYERS} - Number of tiles: {NUM_TILES}");
         //std::unimplemented !()
         //Self {data:vec![], layers: 0, super_pos:Hex{q:0,r:0}, origin:Hex{q:0,r:0}}
-        Self {data:[HexContent::default(); NUM_TILES], /*layers: 0,*/ super_pos:Hex{q:0,r:0}/*, origin:Hex{q:0,r:0}*/}
+        Self {data:vec![], num_layers: 0, super_pos:Hex{q:0,r:0}/*, origin:Hex{q:0,r:0}*/}
     }
 }
 
@@ -73,7 +75,21 @@ fn get_height_by_sample(x0:i32, y0:i32, x1:i32, y1:i32, width:i32, num_chan:i32,
 impl SpiralHexGrid {
     #[func]
     pub fn get_layers(&self)->i32{
-        return NUM_LAYERS as i32;
+        return self.num_layers as i32;
+    }
+    pub fn _get_layers(&self)->u8{
+        return self.num_layers;
+    }
+    #[func]
+    pub fn set_layers(&mut self, layers:i32){self._set_layers(layers as u8)}
+    pub fn _set_layers(&mut self, layers:u8){
+        self.num_layers = layers;
+        self.data.resize(self._get_tile_count(), HexContent { height: 0 });
+    }
+    #[func]
+    pub fn get_tile_count(&self)->i32{self._get_tile_count() as i32}
+    pub fn _get_tile_count(&self)->usize{
+        return 3 * (self.num_layers as usize +1) * self.num_layers as usize + 1;
     }
 
     /// sets the posision of the super-hexagon, in relation to other super hexagons.
@@ -83,7 +99,7 @@ impl SpiralHexGrid {
         self.super_pos.q = super_pos_q;
         self.super_pos.r = super_pos_r;
     }
-    pub fn calculate_origin(super_pos:Hex32)->Hex32{
+    pub fn calculate_origin(&self, super_pos:Hex32)->Hex32{
         use kva_hex_core::direction::*;
         use spiral::*;
 
@@ -94,17 +110,17 @@ impl SpiralHexGrid {
         let dir_seg_m2: Hex32 = get_dir(s_spiral.segment()-2).into();
 
         //conversation constants
-        let layer_scale = NUM_LAYERS as i32 * 2 + 1;
-        let pos_scale = NUM_LAYERS;
+        let layer_scale = self.get_layers() * 2 + 1;
+        let pos_scale = self.get_layers();
 
         //calculate origin
         dir_seg * s_spiral.layer * layer_scale + 
         dir_seg_p2 * s_spiral.s_posision() * layer_scale + 
-        dir_seg_m2 * NUM_LAYERS * s_spiral.layer + 
+        dir_seg_m2 * self.get_layers() * s_spiral.layer + 
         dir_seg * s_spiral.s_posision() * pos_scale
     }
     pub fn origin(&self)->Hex32{
-        Self::calculate_origin(self.super_pos)
+        self.calculate_origin(self.super_pos)
     }
     #[func]
     pub fn origin_packed_array(&self)->PackedInt32Array {PackedInt32Array::from(self.origin().as_array() )}
@@ -112,6 +128,7 @@ impl SpiralHexGrid {
     pub fn super_pos_packed_array(&self)-> PackedInt32Array {PackedInt32Array::from(self.super_pos.as_array())}
     #[func]
     pub fn from_hightmap(&mut self, /*layers:u8,*/ map:Gd<Image>) {
+        let num_tiles = self._get_tile_count();
         //self.layers = layers;
         //detect used channels seem to not function.
         let num_chan = 3;/* {
@@ -122,7 +139,7 @@ impl SpiralHexGrid {
             else if ord == 5 {4}
             else {3}
         }; */
-        let num_layers = NUM_LAYERS as i32;
+        let num_layers = num_tiles as i32;
             
         let data: PackedByteArray = map.get_data();
         //let size: usize = (3 * (NUM_LAYERS+1) * NUM_LAYERS + 1) as usize;
@@ -135,7 +152,7 @@ impl SpiralHexGrid {
         //godot_print!("size {size}, x_s_size {x_s_size}, y_s_size {y_s_size}");
 
         //self.data.resize(size, HexContent { height: 0 });
-        for i in 0..NUM_TILES{
+        for i in 0..num_tiles{
             let h: Hex32 = spiral::spiral_index_to_hex(i);
             //TEST - remove me
             // if i as i32 >= NUM_TILES as i32 - 20 {
@@ -175,6 +192,8 @@ impl SpiralHexGrid {
     /// Local coordinates can be converted to neighboring grid's coordinates by adding self.to_other_grid_offset()
     pub fn get_neighbors_local(&self, target:Hex32) -> Vec<(Hex32, Option<usize>)>
     {
+        let num_layers = self._get_layers();
+        let num_tiles = self._get_tile_count();
         //defining return variable, and reserving space.
         //index 0 is the neiboring tile's coordinates in local space.
         //Index 1 is None if in the same grid. Else it is the direction index to the neiboring grid where the neiboring tile would be.
@@ -184,7 +203,7 @@ impl SpiralHexGrid {
         
         for d in 0..6 {
             let n:Hex32 = target + get_dir(d).into();
-            let layers = NUM_LAYERS as i32;
+            let layers = num_layers as i32;
             
             if n.q.abs() > layers || n.r.abs() >layers || n.s().abs() >layers {
                 //determine direction to grid hosting the neighboring tile
@@ -262,6 +281,8 @@ impl SpiralHexGrid {
         const VERTS_PER_TILE:usize = 7; // six corners and a center makes 7 vertecies
         const INDICIES_PER_TILE:usize = 6*3; //six triangles make one hexagon, there are 3 vertecies per triangle.
 
+        let num_tiles = self._get_tile_count();
+
         //structe conststs of mesh arrays according to godot documentation
         let vertex_index:usize = ArrayType::VERTEX.ord() as usize;
         let color_index:usize = ArrayType::COLOR.ord() as usize;
@@ -279,9 +300,12 @@ impl SpiralHexGrid {
         let mut colors = PackedColorArray::new();
         let mut indecies = PackedInt32Array::new(); */
 
-        let mut vertecies = [Vector3::ZERO; NUM_TILES * VERTS_PER_TILE + 14]; //TEST extra blank vertecies and indecies. Remeber to remove!
-        let mut colors = [Color::BLACK; NUM_TILES * VERTS_PER_TILE + 14];
-        let mut indecies = [0i32; NUM_TILES* INDICIES_PER_TILE + 36 ];
+        let mut vertecies = vec![]; //[Vector3::ZERO; num_tiles * VERTS_PER_TILE]; 
+        let mut colors = vec![]; //[Color::BLACK; num_tiles * VERTS_PER_TILE];
+        let mut indecies = vec![]; //[0i32; num_tiles* INDICIES_PER_TILE];
+        vertecies.resize(num_tiles * VERTS_PER_TILE, Vector3::ZERO);
+        colors.resize(num_tiles * VERTS_PER_TILE, Color::BLACK);
+        indecies.resize(num_tiles * INDICIES_PER_TILE, 0i32);
 
         //resize arrays to expected sizes.
 /*         vertecies.resize(NUM_TILES * VERTS_PER_TILE);
@@ -295,7 +319,7 @@ impl SpiralHexGrid {
             godot_print!("tile {t} is {h}");
         } */
         //for each tile. This may take some time...
-        for i in 0..NUM_TILES {
+        for i in 0..num_tiles {
             //godot_print!("Drawing tile {i}");
 
             //godot_print!("drawing mesh for tile index {i} of {NUM_TILES}");
@@ -330,7 +354,7 @@ impl SpiralHexGrid {
                         //convert coodinates from local grid's space to the other grid's space
                         let nhex = neighbors[n].0 + self.origin() - grid.bind().origin();
                         let nindex = spiral::hex_to_spiral_index(nhex);
-                        assert!(nindex < NUM_TILES); //If this fails, there is a math error somewhere!
+                        assert!(nindex < num_tiles); //If this fails, there is a math error somewhere!
                         let h = grid.bind().get_heightdata_at(nindex as i32) as f32;
                         //godot_print!("neighbor {n} is in another grid. value set to {h}.");
                         h
@@ -342,7 +366,7 @@ impl SpiralHexGrid {
                 }
                 else {
                     let nindex = spiral::hex_to_spiral_index(neighbors[n].0);
-                    assert!(nindex < NUM_TILES); //If this fails, there is a math error somewhere!
+                    assert!(nindex < num_tiles); //If this fails, there is a math error somewhere!
                     let h = self.get_heightdata_at(nindex as i32) as f32;
                     //godot_print!("neighbor {n} was found as index {nindex}. value set to {h}.");
                     h
