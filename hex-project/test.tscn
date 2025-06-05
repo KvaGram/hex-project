@@ -12,3 +12,5 @@ script = ExtResource("3_5jl1a")
 
 [node name="OmniLight3D" type="OmniLight3D" parent="Freecam3D"]
 omni_range = 50.0
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]

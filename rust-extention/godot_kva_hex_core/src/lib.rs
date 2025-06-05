@@ -20,7 +20,7 @@ const FLAT:bool = true;
 pub mod mesh;
 
 #[derive(GodotClass)]
-#[class(base=RefCounted)]
+#[class(base=Resource)]
 struct SpiralHexGrid {
     //data:[HexContent; NUM_TILES],
     data:Vec<HexContent>,
@@ -29,12 +29,12 @@ struct SpiralHexGrid {
 }
 
 #[godot_api]
-impl IRefCounted for SpiralHexGrid {
+impl IResource for SpiralHexGrid {
     fn init(_base: godot::obj::Base < Self::Base >) -> Self {
         //godot_print!("Number of layers: {NUM_LAYERS} - Number of tiles: {NUM_TILES}");
         //std::unimplemented !()
         //Self {data:vec![], layers: 0, super_pos:Hex{q:0,r:0}, origin:Hex{q:0,r:0}}
-        Self {data:vec![], num_layers: 0, super_pos:Hex{q:0,r:0}/*, origin:Hex{q:0,r:0}*/}
+        Self {data:vec![HexContent{height:0}], num_layers: 0, super_pos:Hex{q:0,r:0}/*, origin:Hex{q:0,r:0}*/}
     }
 }
 
@@ -139,7 +139,7 @@ impl SpiralHexGrid {
             else if ord == 5 {4}
             else {3}
         }; */
-        let num_layers = num_tiles as i32;
+        let num_layers = self.get_tile_count();
             
         let data: PackedByteArray = map.get_data();
         //let size: usize = (3 * (NUM_LAYERS+1) * NUM_LAYERS + 1) as usize;
@@ -434,6 +434,23 @@ impl SpiralHexGrid {
         mesh.add_surface_from_arrays(PrimitiveType::TRIANGLES, &packed_arrays);
 
         mesh //returns final mesh
+    }
+
+    #[func]
+    fn generate_flat_mesh(layers:i32) -> PackedVector3Array{
+        unimplemented!()
+    }
+    #[func]
+    fn generate_base_indicies(layers:i32) -> PackedInt32Array {
+        unimplemented!()
+    }
+    #[func]
+    fn generate_vertex_color(layers:i32) -> PackedColorArray {
+        unimplemented!()
+    }
+    fn apply_height_to_mesh(&self, layers:i32, mesh:PackedVector3Array) -> PackedVector3Array {
+        unimplemented!()
+
     }
 }
 const FLAT_UP_CORNERS: [(f32, f32); 6] = [

@@ -13,8 +13,8 @@ const DEBUG_02:bool = false;
 
 
 #[derive(GodotClass)]
-#[class(base=Mesh)]
-struct SpiralHexMesh {
+#[class(tool, base=Mesh)]
+struct SpiralHexMeshOld {
     base:Base<Mesh>,
     grid_verticies:Vec<Vector3>,
     grid_indicies:Vec<i32>,
@@ -24,8 +24,14 @@ struct SpiralHexMesh {
     grid:Option<Gd<SpiralHexGrid>>,
     grid_n:[Option<Gd<SpiralHexGrid>>;6],
     //If a grid is not defined, layers can be set manually. A value of 0 will result in just one single tile.
+    #[var(
+        get = get_layers,
+        set = set_layers,
+    )]
+    #[export(range = (0f64, 255f64))]
     layers:u8,
     //flags are used to define what surface layers are rendered.
+    //#[export]
     flags:RenderFlags,
     //contains data regarding the current animation effect, or lack thereof.
 //    animate_data:Option<AnimateData>,
@@ -71,9 +77,14 @@ bitflags! {
         const _ = !0;
     }
 }
+// impl Export for RenderFlags {
+//     fn export_hint() -> PropertyHintInfo {
+//         <Self as Var>::var_hint()
+//     }
+// }
 
 #[godot_api]
-impl SpiralHexMesh
+impl SpiralHexMeshOld
 {
     #[func]
     fn get_rid(&self)->Rid{
@@ -84,27 +95,32 @@ impl SpiralHexMesh
         self.rid
     }
     #[func]
+    fn get_layers(&self) -> i32{
+        self.layers as i32
+    }
+
+    #[func]
     fn set_layers(&mut self, new_layers:i32)->bool {
         let gridlength = {if self.grid.is_none(){None} else {
             let layers:i32 = self.grid.as_ref().unwrap().bind().get_layers();
             Some(layers)
         }};
         if new_layers < 0{
-            godot_error!("SpiralHexMesh cannot have a negative layer length. Change discarded");
+            godot_error!("SpiralHexMeshOld cannot have a negative layer length. Change discarded");
             return false;
         }
         else if new_layers > u8::MAX as i32 {
-            godot_error!("SpiralHexMesh cannot have a layer length greater than {}. Change discarded.", u8::MAX);
+            godot_error!("SpiralHexMeshOld cannot have a layer length greater than {}. Change discarded.", u8::MAX);
             return false;
         }
         else if gridlength.is_some() && gridlength.unwrap() < new_layers {
-            godot_error!("SpiralHexMesh already have a defined grid with a length of {}. New length cannot be greater than that. Change discarded.", gridlength.unwrap());
+            godot_error!("SpiralHexMeshOld already have a defined grid with a length of {}. New length cannot be greater than that. Change discarded.", gridlength.unwrap());
             return false;
         }
         else {
             self.layers = new_layers as u8;
             if gridlength.is_some() && gridlength.unwrap() != new_layers {
-                godot_warn!("SpiralHexMesh already have a defined grid with a length of {}. Setting layers manually means less of the grid is rendered in the mesh.", gridlength.unwrap());
+                godot_warn!("SpiralHexMeshOld already have a defined grid with a length of {}. Setting layers manually means less of the grid is rendered in the mesh.", gridlength.unwrap());
             }
             self.need_refresh();
             return true;
@@ -316,7 +332,7 @@ layers 15 and 16 are reserved for bedrock/floors covering "gaps" from aniamted g
 */
 
 #[godot_api]
-impl IMesh for SpiralHexMesh {
+impl IMesh for SpiralHexMeshOld {
     ///Number of contigues surfaces in the mesh.
 	fn get_surface_count(&self,) -> i32 {
         1
@@ -445,27 +461,30 @@ impl IMesh for SpiralHexMesh {
         }
     }
     
-    fn get_property_list(&mut self) -> Vec< godot::meta::PropertyInfo > {
-        use godot::meta::PropertyInfo as Info;
-        vec![
-            Info{property_name:StringName::from("layers"), variant_type:VariantType::INT, class_name:ClassName::none(), usage: PropertyUsageFlags::DEFAULT,
-                hint_info:PropertyHintInfo{hint_string:GString::from("minimum 0, maximum 255. Restricted by unsigned 8 bit integer. This is the number of layers to render. Automatically set by grid(if defined), can be overwritten."), hint: PropertyHint::RANGE}}
+    // fn get_property_list(&mut self) -> Vec< godot::meta::PropertyInfo > {
+    //     use godot::meta::PropertyInfo as Info;
+    //     // vec![
+    //     //     Info{property_name:StringName::from("layers"), variant_type:VariantType::INT, class_name:ClassName::none(), usage: PropertyUsageFlags::DEFAULT,
+    //     //         hint_info:PropertyHintInfo{hint_string:GString::from("minimum 0, maximum 255. Restricted by unsigned 8 bit integer. This is the number of layers to render. Automatically set by grid(if defined), can be overwritten."), hint: PropertyHint::RANGE}}
             
-            ]
-        //TODO: list all properties that I may want to view or edit from inspector.
-    }
+    //     //     ]
+    //     //TODO: list all properties that I may want to view or edit from inspector.
+    // }
     
-    fn validate_property(&self, _property: &mut godot::meta::PropertyInfo) {
-        // TODO use this to validate data set by the inspector. Currently none.
-    }
+    // fn validate_property(&self, property: &mut godot::meta::PropertyInfo) {
+    //     // if property.property_name == StringName::from("layers"){
+    //     //     property.hint_info
+    //     // }
+    // }
     
-    fn property_get_revert(&self, _property: StringName) -> Option< Variant > {
+    fn property_get_revert(&self, property: StringName) -> Option< Variant > {
+        if property == StringName::from("layer"){
+            Some(Variant::from(0))
+        }
+        else {
+            None
+        }
         // TODO use this to reset varaible values from the inspector. Currently no such variables exist
-		None
-    }
-    
-    fn setup_local_to_scene(&mut self,) {
-        //Nothing needs doing. Maybe. I donno... Maybe clone material(s)?
     }
 }
 
