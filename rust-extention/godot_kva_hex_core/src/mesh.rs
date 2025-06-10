@@ -1,8 +1,9 @@
+use godot::classes::base_material_3d::Flags;
 use godot::classes::mesh::ArrayFormat;
 use godot::classes::rendering_server::PrimitiveType;
-use godot::classes::{IMesh, Mesh, RenderingServer};
+use godot::classes::{BaseMaterial3D, IMesh, Material, Mesh, RenderingServer, StandardMaterial3D};
 use godot::global::{PropertyHint, PropertyUsageFlags};
-use godot::meta::{ClassName, PropertyHintInfo};
+use godot::meta::{AsObjectArg, ClassName, ParamType, PropertyHintInfo};
 use godot::prelude::*;
 use bitflags::bitflags;
 use crate::SpiralHexGrid;
@@ -14,13 +15,17 @@ const DEBUG_02:bool = false;
 
 #[derive(GodotClass)]
 #[class(tool, base=Mesh)]
-struct SpiralHexMeshOld {
+struct SpiralHexMesh {
     base:Base<Mesh>,
     grid_verticies:Vec<Vector3>,
     grid_indicies:Vec<i32>,
     grid_colors:Vec<Color>,
     //if grid is not defined, layers will used without pulling this from grid.
     //This will result in a mesh without heightdata, meaning it's flat
+    #[var(
+        set = set_grid
+    )]
+    #[export]
     grid:Option<Gd<SpiralHexGrid>>,
     grid_n:[Option<Gd<SpiralHexGrid>>;6],
     //If a grid is not defined, layers can be set manually. A value of 0 will result in just one single tile.
@@ -31,11 +36,12 @@ struct SpiralHexMeshOld {
     #[export(range = (0f64, 255f64))]
     layers:u8,
     //flags are used to define what surface layers are rendered.
-    //#[export]
+    #[export]
     flags:RenderFlags,
     //contains data regarding the current animation effect, or lack thereof.
 //    animate_data:Option<AnimateData>,
     size:MeshSize,
+    materials:Vec<Option<Gd<StandardMaterial3D>>>,
     rid:Rid
 
 }
@@ -76,15 +82,32 @@ bitflags! {
         // The source may set any bits
         const _ = !0;
     }
+    
 }
-// impl Export for RenderFlags {
-//     fn export_hint() -> PropertyHintInfo {
-//         <Self as Var>::var_hint()
-//     }
-// }
+impl Var for RenderFlags {
+    fn get_property(&self) -> Self::Via {
+        self.bits()
+    }
+
+    fn set_property(&mut self, value: Self::Via) {
+        self = value as RenderFlags;
+    }
+    
+    fn var_hint() -> PropertyHintInfo {
+        PropertyHintInfo{hint:PropertyHint::FLAGS, hint_string:GString::from("need refresh, wall 1, wall 2, wall 3, wall 4, wall 5, wall 6, flat north, animating")}
+    }
+}
+impl Export for RenderFlags {
+    fn export_hint() -> PropertyHintInfo {
+        PropertyHintInfo{hint:PropertyHint::FLAGS, hint_string:GString::from("need refresh, wall 1, wall 2, wall 3, wall 4, wall 5, wall 6, flat north, animating")}
+    }
+}
+impl GodotConvert for RenderFlags {
+    type Via = u32;
+}
 
 #[godot_api]
-impl SpiralHexMeshOld
+impl SpiralHexMesh
 {
     #[func]
     fn get_rid(&self)->Rid{
@@ -106,21 +129,21 @@ impl SpiralHexMeshOld
             Some(layers)
         }};
         if new_layers < 0{
-            godot_error!("SpiralHexMeshOld cannot have a negative layer length. Change discarded");
+            godot_error!("SpiralHexMesh cannot have a negative layer length. Change discarded");
             return false;
         }
         else if new_layers > u8::MAX as i32 {
-            godot_error!("SpiralHexMeshOld cannot have a layer length greater than {}. Change discarded.", u8::MAX);
+            godot_error!("SpiralHexMesh cannot have a layer length greater than {}. Change discarded.", u8::MAX);
             return false;
         }
         else if gridlength.is_some() && gridlength.unwrap() < new_layers {
-            godot_error!("SpiralHexMeshOld already have a defined grid with a length of {}. New length cannot be greater than that. Change discarded.", gridlength.unwrap());
+            godot_error!("SpiralHexMesh already have a defined grid with a length of {}. New length cannot be greater than that. Change discarded.", gridlength.unwrap());
             return false;
         }
         else {
             self.layers = new_layers as u8;
             if gridlength.is_some() && gridlength.unwrap() != new_layers {
-                godot_warn!("SpiralHexMeshOld already have a defined grid with a length of {}. Setting layers manually means less of the grid is rendered in the mesh.", gridlength.unwrap());
+                godot_warn!("SpiralHexMesh already have a defined grid with a length of {}. Setting layers manually means less of the grid is rendered in the mesh.", gridlength.unwrap());
             }
             self.need_refresh();
             return true;
@@ -138,12 +161,24 @@ impl SpiralHexMeshOld
         self.regenerate();
         return true;
     }
+    
+    /// Gets the number of tiles to be rendered.
+    /// The tile count is based the the number of layers.
+    /// Each layer adds a ring of hexagons around the previus layer
+    /// starting from 0, which is a single tile.
+    /// The math simplefies as 3 * (layers+1) * layers + 1
+    /// A layer of 1 is thus 3 * 2 * 1 + 1 = 6 + 1 = 7.
+    /// This method returns a standard i32. For a usize value, use _get_num_tiles (not exposed to Godot)
     #[func]
     fn get_num_tiles(&self) -> i32 {self._get_num_tiles() as i32}
     fn _get_num_tiles(&self) -> usize {
         3 * (self.layers as usize +1) * self.layers as usize + 1
     }
-    /// sets the refresh flag, and calls regenerate_deferred, deferred. 
+    /// sets the refresh flag, and calls regenerate_deferred, deferred.
+    /// This updates the mesh shape and updates the rendering server.
+    /// Is automatically called by internal functions that changes the internal state.
+    /// Exposed for manual use. Should not need to be used manually.
+    #[func]
     fn need_refresh(&mut self){
         self.flags.set(RenderFlags::REFRESH, true);
         self.base_mut().call_deferred("regenerate_deferred", &[]);
@@ -162,9 +197,10 @@ impl SpiralHexMeshOld
 
     /// Regenerate the base grid-mesh
     /// Potentially expensive, only call when needed.
-    /// Do not call deferred. Use regenerate_deferred instead for deferred calls.
+    /// Use need_refresh instead, unless you know what you are doing.
     #[func]
     fn regenerate(&mut self){
+        godot_print!("Spiral hex mesh regenerate");
         use kva_hex_core::spiral;
         const VERTS_PER_TILE:usize = 7; // six corners and a center makes 7 vertecies
         const INDICIES_PER_TILE:usize = 6*3; //six triangles make one hexagon, there are 3 vertecies per triangle.
@@ -289,6 +325,8 @@ impl SpiralHexMeshOld
         //NOTE: drop any variables that may lock self.base or self.base_mut
         self.base_mut().emit_changed();
     }
+    /// Updates the Rendering server with new meshdata.
+    ///  Called by regenerate
     fn update_renderer(&mut self){
         let mut rs = RenderingServer::singleton();
         rs.mesh_clear(self.rid);
@@ -332,7 +370,7 @@ layers 15 and 16 are reserved for bedrock/floors covering "gaps" from aniamted g
 */
 
 #[godot_api]
-impl IMesh for SpiralHexMeshOld {
+impl IMesh for SpiralHexMesh {
     ///Number of contigues surfaces in the mesh.
 	fn get_surface_count(&self,) -> i32 {
         1
@@ -391,12 +429,21 @@ impl IMesh for SpiralHexMeshOld {
         3u32
     }
 
-    fn surface_set_material(&mut self, _index: i32, _material: Option< Gd< godot::classes::Material > >,) {
-        //TODO: Store material
+    fn surface_set_material(&mut self, index: i32, material: Option< Gd< godot::classes::Material > >,)
+    {
+        unimplemented!()
     }
+    //  {
+    //     let foo = AsObjectArg::from(material);
+        
+    //     if material.is_some(){
+    //         self.base_mut().surface_set_material(index, material.unwrap());
+    //     }
+        
+    // }
 
-    fn surface_get_material(&self, _index: i32,) -> Option< Gd< godot::classes::Material > > {
-        None
+    fn surface_get_material(&self, index: i32,) -> Option< Gd< godot::classes::Material > > {
+        self.base().surface_get_material(index)
     }
 
     fn get_blend_shape_count(&self,) -> i32 {
@@ -430,8 +477,11 @@ impl IMesh for SpiralHexMeshOld {
     }
     
     fn init(base: godot::obj::Base < Self::Base >) -> Self {
+        let mut base_mat = StandardMaterial3D::new_gd();
+        base_mat.set_flag(Flags::ALBEDO_FROM_VERTEX_COLOR, true);
         let rid = RenderingServer::singleton().mesh_create();
-		Self {base, grid:None, grid_n:[None, None, None, None, None, None], layers:3u8, flags:RenderFlags::empty(), /*animate_data:None,*/ grid_verticies:vec!(), grid_colors:vec!(), grid_indicies:vec!(), size: MeshSize::default(), rid}
+        RenderingServer::singleton().mesh_surface_set_material(rid, 0, base_mat.get_rid());
+		Self {base, grid:None, grid_n:[None, None, None, None, None, None], layers:3u8, flags:RenderFlags::empty(), materials:vec![Some(base_mat)], /*animate_data:None,*/ grid_verticies:vec!(), grid_colors:vec!(), grid_indicies:vec!(), size: MeshSize::default(), rid}
     }
     
     fn to_string(&self) -> godot::builtin::GString {
