@@ -64,7 +64,7 @@ func _ready() -> void:
 	var material = StandardMaterial3D.new();
 	material.vertex_color_use_as_albedo = true;
 	meshRender.material_override = material;
-	add_child(meshRender);
+	#add_child(meshRender);
 	meshRender.mesh = mesh;
 	meshRender.set_base(mesh.get_rid())
 	print(meshRender.get_base())

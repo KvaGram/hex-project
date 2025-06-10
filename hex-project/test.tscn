@@ -1,16 +1,23 @@
-[gd_scene load_steps=3 format=3 uid="uid://woxp4hm8oqbm"]
+[gd_scene load_steps=4 format=3 uid="uid://woxp4hm8oqbm"]
 
 [ext_resource type="Script" uid="uid://b1tpk4a3k3n2s" path="res://testhex.gd" id="1_1f2w4"]
 [ext_resource type="Script" uid="uid://cryti4gjqn6ha" path="res://addons/freecam_3D/freecam.gd" id="3_5jl1a"]
+
+[sub_resource type="SpiralHexMesh" id="SpiralHexMesh_8uh7m"]
+layers = 8
+resource_local_to_scene = true
+resource_name = "SpiralHexMesh1"
 
 [node name="Node3D" type="Node3D"]
 script = ExtResource("1_1f2w4")
 
 [node name="Freecam3D" type="Camera3D" parent="."]
 unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 0.558817, 0.829291, 0, -0.829291, 0.558817, 0, 0.910859, 0.639005)
 script = ExtResource("3_5jl1a")
 
 [node name="OmniLight3D" type="OmniLight3D" parent="Freecam3D"]
 omni_range = 50.0
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("SpiralHexMesh_8uh7m")
