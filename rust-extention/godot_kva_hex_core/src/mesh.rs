@@ -1,16 +1,22 @@
 use godot::classes::base_material_3d::Flags;
+//use godot::classes::class_macros::sys::godot_virtual_consts::Material;
+use godot::classes::Material;
 use godot::classes::mesh::ArrayFormat;
 use godot::classes::rendering_server::PrimitiveType;
-use godot::classes::{BaseMaterial3D, IMesh, Material, Mesh, RenderingServer, StandardMaterial3D};
+use godot::classes::{IMesh, Mesh, RenderingServer, StandardMaterial3D};
 use godot::global::{PropertyHint, PropertyUsageFlags};
 use godot::meta::{AsObjectArg, ClassName, ParamType, PropertyHintInfo};
 use godot::prelude::*;
 use bitflags::bitflags;
 use crate::SpiralHexGrid;
 use std::collections::HashMap;
+use std::ops::BitAndAssign;
 
 const DEBUG_01:bool = false;
 const DEBUG_02:bool = false;
+
+const VERTS_PER_TILE:usize = 7; // six corners and a center makes 7 vertecies
+const INDICIES_PER_TILE:usize = 6*3; //six triangles make one hexagon, there are 3 vertecies per triangle.
 
 
 #[derive(GodotClass)]
@@ -41,7 +47,7 @@ struct SpiralHexMesh {
     //contains data regarding the current animation effect, or lack thereof.
 //    animate_data:Option<AnimateData>,
     size:MeshSize,
-    materials:Vec<Option<Gd<StandardMaterial3D>>>,
+    materials:Vec<Option<Gd<Material>>>,
     rid:Rid
 
 }
@@ -90,7 +96,7 @@ impl Var for RenderFlags {
     }
 
     fn set_property(&mut self, value: Self::Via) {
-        self = value as RenderFlags;
+        *self = RenderFlags::from_bits_truncate(value);
     }
     
     fn var_hint() -> PropertyHintInfo {
@@ -113,10 +119,10 @@ impl SpiralHexMesh
     fn get_rid(&self)->Rid{
         self.rid
     }
-    #[func]
-    fn _get_rid(&self)->Rid{
-        self.rid
-    }
+    // #[func]
+    // fn _get_rid(&self)->Rid{
+    //     self.rid
+    // }
     #[func]
     fn get_layers(&self) -> i32{
         self.layers as i32
@@ -194,6 +200,54 @@ impl SpiralHexMesh
             self.regenerate();
         }
     }
+    ///generates a plain mesh with no consideration to heightdata
+    fn generate_plain_mesh(layers:u8, flat_north:bool)->(Vec<Vector3>, Vec<Color>, Vec<i32>){
+        use kva_hex_core::spiral;
+        let num_tiles = Self::_tile_list_len(layers as usize);
+        let mesh_vertex_len = Self::_mesh_vertex_len(layers as usize);
+        let mesh_index_len = Self::_mesh_index_len(layers as usize);
+        
+        let mut vertex = vec![Vector3::ZERO; mesh_vertex_len];
+        let mut color = vec![Color::BLACK;mesh_vertex_len];
+        let mut index = vec![0;mesh_index_len];
+        for i in 0..num_tiles {
+            let col:f64 = (i % 500) as f64 / 500f64;
+            let col = Color::from_hsv(col, 1.0, 1.0);
+            let hex = spiral::spiral_index_to_hex(i);
+
+            let center_raw = hex.to_xy(flat_north);
+            let center = Vector3{x:center_raw.0, y:0.0, z:center_raw.1};
+            let vi_start = i * VERTS_PER_TILE;
+            let ii_start = i * INDICIES_PER_TILE;
+            for c in 0..6 {
+                //godot_print!("Printing corner {c}");
+                let v1 = vi_start + 1 + c;
+                let v2 = vi_start + 1 + (c+1)%6;
+
+                let v = Vector3{
+                    x: {if flat_north {FLAT_UP_CORNERS[c]} else {POINTY_UP_CORNERS[c]}}.0
+                    + center_raw.0,
+                    y: 0.0,
+                    z: {if flat_north {FLAT_UP_CORNERS[c]} else {POINTY_UP_CORNERS[c]}}.1
+                    + center_raw.1,
+                };
+                vertex[vi_start + c + 1] = v;
+                color[vi_start + c + 1] = col;
+
+                //vertecies[center_i + 1 + c]
+                index[ii_start + c*3 + 0] = vi_start as i32;
+                index[ii_start + c*3 + 1] = v1 as i32;
+                index[ii_start + c*3 + 2] = v2 as i32;
+            }
+        }
+
+        (vertex, color, index)
+    }
+    const fn _tile_list_len(layers:usize) -> usize {3 * (layers + 1) * layers + 1}
+    const fn _mesh_vertex_len(layers:usize) -> usize {Self::_tile_list_len(layers) * 7}
+    const fn _mesh_index_len(layers:usize) -> usize {Self::_tile_list_len(layers) * 18}
+
+    
 
     /// Regenerate the base grid-mesh
     /// Potentially expensive, only call when needed.
@@ -202,8 +256,6 @@ impl SpiralHexMesh
     fn regenerate(&mut self){
         godot_print!("Spiral hex mesh regenerate");
         use kva_hex_core::spiral;
-        const VERTS_PER_TILE:usize = 7; // six corners and a center makes 7 vertecies
-        const INDICIES_PER_TILE:usize = 6*3; //six triangles make one hexagon, there are 3 vertecies per triangle.
         let num_tiles = self._get_num_tiles();
         let grid_vertex_size = num_tiles * VERTS_PER_TILE;
         let grid_index_size = num_tiles * INDICIES_PER_TILE;
@@ -321,15 +373,17 @@ impl SpiralHexMesh
             colors[vi_start+1] = Color::WHITE;
         }
         self.flags.set(RenderFlags::REFRESH,false);
-        self.update_renderer();
+        Self::update_renderer(&self.rid, &self.grid_verticies, &self.grid_colors, &self.grid_indicies);
         //NOTE: drop any variables that may lock self.base or self.base_mut
         self.base_mut().emit_changed();
     }
+}
+impl  SpiralHexMesh{
     /// Updates the Rendering server with new meshdata.
     ///  Called by regenerate
-    fn update_renderer(&mut self){
+    fn update_renderer(rid:&Rid, vertex:&Vec<Vector3>, color:&Vec<Color>, index:&Vec<i32>){
         let mut rs = RenderingServer::singleton();
-        rs.mesh_clear(self.rid);
+        rs.mesh_clear(*rid);
 
         use godot::classes::mesh::ArrayType;
         //structe conststs of mesh arrays according to godot documentation
@@ -338,21 +392,13 @@ impl SpiralHexMesh
         let indicies_index:usize = ArrayType::INDEX.ord() as usize;
         let packed_array_size:usize = ArrayType::MAX.ord() as usize;
 
-        // let mut data = [&Variant::nil(),&Variant::nil(),&Variant::nil(),&Variant::nil(),
-        // &Variant::nil(),&Variant::nil(),&Variant::nil(),&Variant::nil(),&Variant::nil(),&Variant::nil(),
-        // &Variant::nil(),&Variant::nil(),&Variant::nil()];
-        // data[vertex_index] = &PackedVector3Array::from(self.grid_verticies.clone()).to_variant();
-        // data[color_index] = &PackedColorArray::from(self.grid_colors.clone()).to_variant();
-        // data[indicies_index] = &PackedInt32Array::from(self.grid_indicies.clone()).to_variant();
-
-        //TODO pack relevant data and return copy.
 		let mut data = VariantArray::new();
         data.resize(packed_array_size, &Variant::nil());
-        data.set(vertex_index, &PackedVector3Array::from(self.grid_verticies.clone()).to_variant());
-        data.set(color_index, &PackedColorArray::from(self.grid_colors.clone()).to_variant());
-        data.set(indicies_index, &PackedInt32Array::from(self.grid_indicies.clone()).to_variant());
+        data.set(vertex_index, &PackedVector3Array::from(vertex.clone()).to_variant());
+        data.set(color_index, &PackedColorArray::from(color.clone()).to_variant());
+        data.set(indicies_index, &PackedInt32Array::from(index.clone()).to_variant());
 
-        rs.mesh_add_surface_from_arrays(self.rid,
+        rs.mesh_add_surface_from_arrays(*rid,
             PrimitiveType::TRIANGLES,
             &data
         );
@@ -429,21 +475,22 @@ impl IMesh for SpiralHexMesh {
         3u32
     }
 
-    fn surface_set_material(&mut self, index: i32, material: Option< Gd< godot::classes::Material > >,)
+    fn surface_set_material(&mut self, index: i32, material: Option< Gd< Material > >,)
     {
-        unimplemented!()
-    }
-    //  {
-    //     let foo = AsObjectArg::from(material);
-        
-    //     if material.is_some(){
-    //         self.base_mut().surface_set_material(index, material.unwrap());
-    //     }
-        
-    // }
+        let i = index as usize;
+        if self.materials.len() <= i{
+            self.materials.resize(i+1, None);
+        }
+        if let Some(ref mat) = material {
+            RenderingServer::singleton().mesh_surface_set_material(self.get_rid(), index, mat.get_rid());
+        }
+        self.materials[i] = material;
 
-    fn surface_get_material(&self, index: i32,) -> Option< Gd< godot::classes::Material > > {
-        self.base().surface_get_material(index)
+    }
+
+
+    fn surface_get_material(&self, index: i32,) -> Option< Gd< Material > > {
+        self.materials.get(index as usize).map_or(None, |om| om.clone().map_or(None, |m| Some( m ) ) )
     }
 
     fn get_blend_shape_count(&self,) -> i32 {
@@ -466,8 +513,8 @@ impl IMesh for SpiralHexMesh {
         match self.size{
             MeshSize::Fixed(s) => Aabb { position: Vector3 { x: -s.x/2f32, y: -s.y/2f32, z: -s.z/2f32 }, size:s},
             MeshSize::Scaled(s) =>{
-                let max = Vector3{x:(self.layers as f32)*s.x, y:255f32*s.y, z:(self.layers as f32)*s.z};
-                let min = Vector3{x:-(self.layers as f32)*s.x, y:0f32, z:-(self.layers as f32)*s.z};
+                let max = Vector3{x:(self.layers as f32+1.0)*s.x, y:255f32*s.y, z:(self.layers as f32+1.0)*s.z};
+                let min = Vector3{x:-(self.layers as f32+1.0)*s.x, y:0f32, z:-(self.layers as f32+1.0)*s.z};
                 Aabb::from_corners(max, min)
                 //TODO calculate the Aabb
                 //Aabb{position: Vector3::ZERO, size: Vector3::ONE}
@@ -480,8 +527,10 @@ impl IMesh for SpiralHexMesh {
         let mut base_mat = StandardMaterial3D::new_gd();
         base_mat.set_flag(Flags::ALBEDO_FROM_VERTEX_COLOR, true);
         let rid = RenderingServer::singleton().mesh_create();
+        let (start_vertex, start_color, start_index) = Self::generate_plain_mesh(3, true);
         RenderingServer::singleton().mesh_surface_set_material(rid, 0, base_mat.get_rid());
-		Self {base, grid:None, grid_n:[None, None, None, None, None, None], layers:3u8, flags:RenderFlags::empty(), materials:vec![Some(base_mat)], /*animate_data:None,*/ grid_verticies:vec!(), grid_colors:vec!(), grid_indicies:vec!(), size: MeshSize::default(), rid}
+        Self::update_renderer(&rid, &start_vertex, &start_color, &start_index);
+		Self {base, grid:None, grid_n:[None, None, None, None, None, None], layers:3u8, flags:RenderFlags::empty(), materials:vec![Some(base_mat.upcast())], /*animate_data:None,*/ grid_verticies:start_vertex, grid_colors:start_color, grid_indicies:start_index, size: MeshSize::default(), rid}
     }
     
     fn to_string(&self) -> godot::builtin::GString {

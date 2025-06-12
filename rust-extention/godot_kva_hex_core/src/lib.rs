@@ -35,6 +35,7 @@ impl IResource for SpiralHexGrid {
         //std::unimplemented !()
         //Self {data:vec![], layers: 0, super_pos:Hex{q:0,r:0}, origin:Hex{q:0,r:0}}
         Self {data:vec![HexContent{height:0}], num_layers: 0, super_pos:Hex{q:0,r:0}/*, origin:Hex{q:0,r:0}*/}
+        
     }
 }
 

@@ -4,9 +4,7 @@
 [ext_resource type="Script" uid="uid://cryti4gjqn6ha" path="res://addons/freecam_3D/freecam.gd" id="3_5jl1a"]
 
 [sub_resource type="SpiralHexMesh" id="SpiralHexMesh_8uh7m"]
-layers = 8
-resource_local_to_scene = true
-resource_name = "SpiralHexMesh1"
+layers = 0
 
 [node name="Node3D" type="Node3D"]
 script = ExtResource("1_1f2w4")
