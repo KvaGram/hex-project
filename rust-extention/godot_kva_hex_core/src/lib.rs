@@ -17,7 +17,8 @@ use kva_hex_core::Hex32;
 //orientation of tiles. Flat means a flat edge towards 'north'. False value means pointy edge towards 'north'.
 const FLAT:bool = true; 
 
-pub mod mesh;
+//pub mod mesh;
+pub mod node;
 
 #[derive(GodotClass)]
 #[class(base=Resource)]

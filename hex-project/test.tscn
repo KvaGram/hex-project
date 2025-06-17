@@ -1,10 +1,15 @@
-[gd_scene load_steps=4 format=3 uid="uid://woxp4hm8oqbm"]
+[gd_scene load_steps=5 format=3 uid="uid://woxp4hm8oqbm"]
 
 [ext_resource type="Script" uid="uid://b1tpk4a3k3n2s" path="res://testhex.gd" id="1_1f2w4"]
 [ext_resource type="Script" uid="uid://cryti4gjqn6ha" path="res://addons/freecam_3D/freecam.gd" id="3_5jl1a"]
+[ext_resource type="Script" uid="uid://nddroatn4dtu" path="res://yellow.gd" id="3_6uqi0"]
 
-[sub_resource type="SpiralHexMesh" id="SpiralHexMesh_8uh7m"]
-layers = 0
+[sub_resource type="Mesh" id="Mesh_ppyta"]
+resource_local_to_scene = false
+resource_name = ""
+lightmap_size_hint = Vector2i(0, 0)
+script = ExtResource("3_6uqi0")
+metadata/_custom_type_script = "uid://nddroatn4dtu"
 
 [node name="Node3D" type="Node3D"]
 script = ExtResource("1_1f2w4")
@@ -18,4 +23,5 @@ script = ExtResource("3_5jl1a")
 omni_range = 50.0
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
-mesh = SubResource("SpiralHexMesh_8uh7m")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.685411, 0, 0.171475)
+mesh = SubResource("Mesh_ppyta")
