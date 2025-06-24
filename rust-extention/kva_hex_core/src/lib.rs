@@ -1,3 +1,4 @@
+#![allow(unused_variables)]
 use std::cmp::max;
 
 use num::{abs, Signed, ToPrimitive};
@@ -244,7 +245,7 @@ pub mod spiral
 {
     use std::{fmt::Display/* , io::Error */};
 
-    use num::{integer::Roots, ToPrimitive};
+    use num::{ToPrimitive};
     use crate::direction::get_dir;
 
     use super::*;

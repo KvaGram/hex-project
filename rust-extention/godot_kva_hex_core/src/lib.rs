@@ -1,6 +1,10 @@
+#![allow(unused_variables)]
+#![allow(unused_mut)]
+#![allow(dead_code)]
 use std::cmp;
 use std::u8;
 
+use godot::classes::image::Format;
 use godot::classes::mesh::ArrayType;
 use godot::classes::mesh::PrimitiveType;
 use godot::classes::Image;
@@ -26,7 +30,9 @@ struct SpiralHexGrid {
     //data:[HexContent; NUM_TILES],
     data:Vec<HexContent>,
     super_pos:Hex32, //coordinates of this grid within a grid of grids.
-    num_layers:u8
+    num_layers:u8,
+    raw_heightdata:PackedByteArray,
+    raw_size:Vector2i
 }
 
 #[godot_api]
@@ -35,7 +41,7 @@ impl IResource for SpiralHexGrid {
         //godot_print!("Number of layers: {NUM_LAYERS} - Number of tiles: {NUM_TILES}");
         //std::unimplemented !()
         //Self {data:vec![], layers: 0, super_pos:Hex{q:0,r:0}, origin:Hex{q:0,r:0}}
-        Self {data:vec![HexContent{height:0}], num_layers: 0, super_pos:Hex{q:0,r:0}/*, origin:Hex{q:0,r:0}*/}
+        Self {data:vec![HexContent{height:0}], num_layers: 0, super_pos:Hex{q:0,r:0}, raw_heightdata:PackedByteArray::new(), raw_size:Vector2i::ONE}
         
     }
 }
@@ -128,43 +134,55 @@ impl SpiralHexGrid {
     pub fn origin_packed_array(&self)->PackedInt32Array {PackedInt32Array::from(self.origin().as_array() )}
     #[func]
     pub fn super_pos_packed_array(&self)-> PackedInt32Array {PackedInt32Array::from(self.super_pos.as_array())}
+
     #[func]
-    pub fn from_hightmap(&mut self, /*layers:u8,*/ map:Gd<Image>) {
+    fn load_image(&mut self, mut img:Gd<Image>) {
+        img.convert(Format::RG8);
+        self.raw_heightdata = img.get_data();
+        self.raw_size = img.get_size();
+    }
+
+    #[func]
+    pub fn regenerate(&mut self) {
         let num_tiles = self._get_tile_count();
         //self.layers = layers;
-        //detect used channels seem to not function.
-        let num_chan = 3;/* {
-            let ord = map.detect_used_channels().ord();
-            if ord == 0 {1}
-            else if ord == 1 || ord == 3 {2}
-            else if ord == 4 {3}
-            else if ord == 5 {4}
-            else {3}
-        }; */
-        let num_layers = self.get_tile_count();
+        //format is set to RGB (3 bytes per pixel) in load_image.
+        let num_chan = 3;
+        //We use red channel for heightdata
+        let channel = 0;
+        let num_layers = self._get_layers();
             
-        let data: PackedByteArray = map.get_data();
-        //let size: usize = (3 * (NUM_LAYERS+1) * NUM_LAYERS + 1) as usize;
-        let (width, _height) = (map.get_width(), map.get_height());
-        //sample sizes. How big a rectangle (by radius) does each tile need to sample? For average height.
-        let x_s_size:i32 = map.get_width()  / (num_layers * 2);
-        let y_s_size:i32 = map.get_height() / (num_layers * 2);
-        let scale_x: f32 = map.get_width() as f32 / (2 * num_layers) as f32;
-        let scale_y: f32 = map.get_height() as f32 / (2 * num_layers) as f32;
+        let data: PackedByteArray = self.raw_heightdata.clone();
+
+        //sample sizes. How many pixels per hexagon.
+        let scale:Vector2 = self.raw_size.into() / (num_layers * 2 +1);
+        let sample:Vector2i = Vector2i { x: (scale.x.round() as i32).max(1), y: (scale.y.round() as i32).max(1) };
         //godot_print!("size {size}, x_s_size {x_s_size}, y_s_size {y_s_size}");
 
-        //self.data.resize(size, HexContent { height: 0 });
+        //for each hexagon tile from center, spiraling out layer by layer
         for i in 0..num_tiles{
-            let h: Hex32 = spiral::spiral_index_to_hex(i);
+            //get hex coordinates by layer index
+            let hex: Hex32 = spiral::spiral_index_to_hex(i);
+            //generate local x and y coordinates of hexagon, where tile 0 is center of the map
+            let mut x: f32;
+            let mut y: f32;
+            (x, y) = hex.to_xy(true);
+            //apply scale and offset
+            x = x * scale.x + self.raw_size.x as f32 /2f32;
+            y = y * scale.y + self.raw_size.y as f32 /2f32;
+            //Get area of pixels to sample for hexagon
+
+            let x_min = (x as i32 - sample.x/2).clamp(0, self.raw_size.x-2);
+            let x_max = (x as i32 + sample.x/2).clamp(1, self.raw_size.x-1);
+            let y_min = (y as i32 - sample.y/2).clamp(0, self.raw_size.y-2);
+            let y_max = (y as i32 + sample.y/2).clamp(1, self.raw_size.y-1);
+
+
+
             //TEST - remove me
             // if i as i32 >= NUM_TILES as i32 - 20 {
             //     godot_print!("height - {}, {}, {}", h.q, h.r, h.s());
             // }
-            let mut x: f32;
-            let mut y: f32;
-            (x, y) = h.to_xy(true);
-            x = x * scale_x + (map.get_width()/2) as f32;
-            y = y * scale_y + (map.get_height()/2) as f32;
             let (x, y) = (x.round() as i32, y.round() as i32);
             //godot_print!("hex at x{x}, y{y}");
             let (x0, y0) = (cmp::max(x-x_s_size, 0), cmp::max(y-y_s_size, 0));
@@ -450,6 +468,7 @@ impl SpiralHexGrid {
     fn generate_vertex_color(layers:i32) -> PackedColorArray {
         unimplemented!()
     }
+
     fn apply_height_to_mesh(&self, layers:i32, mesh:PackedVector3Array) -> PackedVector3Array {
         unimplemented!()
 
@@ -477,9 +496,9 @@ struct HexContent{
     height:u8
 }
 impl HexContent {
-    fn default()->Self{
-        Self{height: u8::MAX/2}
-    }
+    // fn default()->Self{
+    //     Self{height: u8::MAX/2}
+    // }
 }
 
 #[gdextension]
