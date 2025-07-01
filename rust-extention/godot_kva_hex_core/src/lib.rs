@@ -177,18 +177,7 @@ impl SpiralHexGrid {
             let y_min = (y as i32 - sample.y/2).clamp(0, self.raw_size.y-2);
             let y_max = (y as i32 + sample.y/2).clamp(1, self.raw_size.y-1);
 
-
-
-            //TEST - remove me
-            // if i as i32 >= NUM_TILES as i32 - 20 {
-            //     godot_print!("height - {}, {}, {}", h.q, h.r, h.s());
-            // }
-            let (x, y) = (x.round() as i32, y.round() as i32);
-            //godot_print!("hex at x{x}, y{y}");
-            let (x0, y0) = (cmp::max(x-x_s_size, 0), cmp::max(y-y_s_size, 0));
-            let (x1, y1) = (cmp::min(x+x_s_size, map.get_width()), cmp::min(y+y_s_size, map.get_height()));
-            //self.data[i].height = get_height_by_sample2(x0, y0, x1, y1, &map);
-            self.data[i].height = get_height_by_sample(x0, y0, x1, y1, width, num_chan, &data);
+            self.data[i].height = get_height_by_sample(x_min, y_min, x_max, y_max, self.raw_size.x, num_chan, &data);
         }
     }
     #[func]
