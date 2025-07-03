@@ -17,10 +17,10 @@ func _ready() -> void:
 	testmap = load("res://assets/maps/iceland_heightmap.png");
 	testmap.decompress();
 	t1 = Time.get_ticks_msec();
-	testhex.from_hightmap(testmap);
+	#testhex.from_hightmap(testmap);
 	t2 = Time.get_ticks_msec();
-	var mesh = SpiralHexMesh.new();
-	mesh.set_grid(testhex)
+	#var mesh = SpiralHexMesh.new();
+	#mesh.set_grid(testhex)
 	#mesh.set_layers(2);
 	#mesh.regenerate();
 	t3 = Time.get_ticks_msec();
@@ -31,18 +31,18 @@ func _ready() -> void:
 	
 	#diagnose the mesh
 	
-	var aabb = mesh.get_aabb();
-	print("→ Mesh AABB position = ", aabb.position)
-	print("→ Mesh AABB size     = ", aabb.size)
+	#var aabb = mesh.get_aabb();
+	#print("→ Mesh AABB position = ", aabb.position)
+	#print("→ Mesh AABB size     = ", aabb.size)
 	
 	
-	var arrs = mesh.surface_get_arrays(0)
-	var verts = arrs[Mesh.ARRAY_VERTEX];
-	var inds = arrs[Mesh.ARRAY_INDEX];
-	var cols = arrs[Mesh.ARRAY_COLOR];
-	print("→ FINAL VERTEX COUNT = %d" % verts.size())
-	print("→ FINAL INDEX  COUNT = %d" % inds.size())
-	print("→ FINAL COLOR  COUNT = %d" % cols.size())
+	#var arrs = mesh.surface_get_arrays(0)
+	#var verts = arrs[Mesh.ARRAY_VERTEX];
+	#var inds = arrs[Mesh.ARRAY_INDEX];
+	#var cols = arrs[Mesh.ARRAY_COLOR];
+	#print("→ FINAL VERTEX COUNT = %d" % verts.size())
+	#print("→ FINAL INDEX  COUNT = %d" % inds.size())
+	#print("→ FINAL COLOR  COUNT = %d" % cols.size())
 	
 	#if verts.size() >= 14:
 		#var start_v = verts.size() - 14
@@ -65,8 +65,8 @@ func _ready() -> void:
 	material.vertex_color_use_as_albedo = true;
 	meshRender.material_override = material;
 	#add_child(meshRender);
-	meshRender.mesh = mesh;
-	meshRender.set_base(mesh.get_rid())
+	#meshRender.mesh = mesh;
+	#meshRender.set_base(mesh.get_rid())
 	print(meshRender.get_base())
 		
 	#var verts:PackedVector3Array = testhex.test_draw_hex(true);

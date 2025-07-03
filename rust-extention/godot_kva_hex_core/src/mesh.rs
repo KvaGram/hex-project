@@ -36,11 +36,12 @@ struct SpiralHexMesh {
     grid_n:[Option<Gd<SpiralHexGrid>>;6],
     //If a grid is not defined, layers can be set manually. A value of 0 will result in just one single tile.
     #[var(
-        get = get_layers,
-        set = set_layers,
+                get = get_layers,
+                        set = set_layers,
+                            )]
+                                #[export(range = (0f64, 255f64))]
+                                    layers:u8,
     )]
-    #[export(range = (0f64, 255f64))]
-    layers:u8,
     //flags are used to define what surface layers are rendered.
     #[export]
     flags:RenderFlags,

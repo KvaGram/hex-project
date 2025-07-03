@@ -45,40 +45,6 @@ impl IResource for SpiralHexGrid {
         
     }
 }
-
-
-
-fn get_height_by_sample(x0:i32, y0:i32, x1:i32, y1:i32, width:i32, num_chan:i32, data: &PackedByteArray) ->u8 {
-    let mut index:usize;
-    if y1-y0 < 1 || x1-x0 < 1 {
-        index = ((y0 * width + x0) * num_chan) as usize;
-        return data.get(index).unwrap_or(0);
-    }
-    else {
-        let mut sum:u32 = 0;//map.get_pixel(x0, y0).r8().into();
-        let count:u32 = ((x1-x0) * (y1-y0)).try_into().unwrap_or(u32::MAX);
-        for y in y0..y1{
-            index = ((y * width + x0) * num_chan) as usize;
-            for _ in x0..x1 {
-                sum += data.get(index).unwrap_or(0) as u32;
-                index += num_chan as usize;
-            }
-        }
-        (sum/count).try_into().unwrap_or(u8::MAX)
-    }
-}
-/* fn get_height_by_sample2(x0:i32, y0:i32, x1:i32, y1:i32, map: &Image) ->u8 {
-    //godot_print!("get_height_by_sample {x0}, {y0}, {x1}, {y1}", );
-    let mut sum:u32 = map.get_pixel(x0, y0).r8().into();
-    let count:u32 = ((x1-x0) * (y1-y0)+1).try_into().unwrap_or(u32::MAX);
-    for x in x0..x1 {
-        for y in y0..y1 {
-            sum += u32::from(map.get_pixel(x, y).r8());
-        }
-    }
-    (sum/count).try_into().unwrap_or(u8::MAX)
-}
- */
 #[godot_api]
 impl SpiralHexGrid {
     #[func]
@@ -155,7 +121,7 @@ impl SpiralHexGrid {
         let data: PackedByteArray = self.raw_heightdata.clone();
 
         //sample sizes. How many pixels per hexagon.
-        let scale:Vector2 = self.raw_size.into() / (num_layers * 2 +1);
+        let scale:Vector2 = self.raw_size.cast_float() / (num_layers * 2 +1) as f32;
         let sample:Vector2i = Vector2i { x: (scale.x.round() as i32).max(1), y: (scale.y.round() as i32).max(1) };
         //godot_print!("size {size}, x_s_size {x_s_size}, y_s_size {y_s_size}");
 
@@ -164,20 +130,32 @@ impl SpiralHexGrid {
             //get hex coordinates by layer index
             let hex: Hex32 = spiral::spiral_index_to_hex(i);
             //generate local x and y coordinates of hexagon, where tile 0 is center of the map
-            let mut x: f32;
-            let mut y: f32;
-            (x, y) = hex.to_xy(true);
-            //apply scale and offset
-            x = x * scale.x + self.raw_size.x as f32 /2f32;
-            y = y * scale.y + self.raw_size.y as f32 /2f32;
+            let point =
+                Vector2::from_tuple(hex.to_xy(true)) //convert QRS coords to XY points on flat plane for heightdata.
+                 * scale //apply scaling.
+                 + (self.raw_size/2 - sample/2).cast_float(); //apply offsets.
             //Get area of pixels to sample for hexagon
 
-            let x_min = (x as i32 - sample.x/2).clamp(0, self.raw_size.x-2);
-            let x_max = (x as i32 + sample.x/2).clamp(1, self.raw_size.x-1);
-            let y_min = (y as i32 - sample.y/2).clamp(0, self.raw_size.y-2);
-            let y_max = (y as i32 + sample.y/2).clamp(1, self.raw_size.y-1);
+            let max = Vector2i{x: point.x as i32 + sample.x, y: point.y as i32 + sample.y}
+                .clamp(Vector2i { x: 1, y: 1 }, Vector2i { x: self.raw_size.x-1, y: self.raw_size.y-1 });
+            let min = point.cast_int()
+                .clamp(Vector2i { x: 0, y: 0 }, Vector2i { x: self.raw_size.x-2, y: self.raw_size.y-2 });
 
-            self.data[i].height = get_height_by_sample(x_min, y_min, x_max, y_max, self.raw_size.x, num_chan, &data);
+            //self.data[i].height = get_height_by_sample(x_min, y_min, x_max, y_max, self.raw_size.x, num_chan, &data);
+
+            self.data[i].height = {
+                let mut index:usize;
+                let mut sum:u32 = 0;
+                let count:u32 = ((max.x-min.x) * (max.y-min.y)).try_into().unwrap_or(u32::MAX);
+                for y in min.y..max.y{
+                    index = ((y * self.raw_size.x + min.x) * num_chan) as usize;
+                    for _ in min.x..max.x {
+                        sum += data.get(index + channel).unwrap_or(0) as u32;
+                        index += num_chan as usize;
+                    }
+                }
+                (sum/count).try_into().unwrap_or(u8::MAX)
+            }
         }
     }
     #[func]

@@ -5,7 +5,7 @@
 
 use std::{array, f32::consts::TAU, ops::Deref};
 
-use godot::{ classes::{class_macros::{private::callbacks::free, sys::godot_virtual_consts::{AnimationNode::get_child_nodes, EditorPlugin::build}}, mesh::PrimitiveType, CollisionShape3D, ConvexPolygonShape3D, Mesh, MeshInstance3D, StandardMaterial3D, StaticBody3D, SurfaceTool}, meta::{AsObjectArg, ParamType}, obj::WithBaseField, prelude::*};
+use godot::{ classes::{base_material_3d::TextureParam, class_macros::{private::callbacks::free, sys::godot_virtual_consts::{AnimationNode::get_child_nodes, EditorPlugin::build}}, mesh::PrimitiveType, CollisionShape3D, ConvexPolygonShape3D, Mesh, MeshInstance3D, StandardMaterial3D, StaticBody3D, SurfaceTool, Texture2D}, meta::{AsObjectArg, ParamType}, obj::WithBaseField, prelude::*};
 use kva_hex_core::{direction, spiral::{self}};
 
 use crate::SpiralHexGrid;
@@ -14,6 +14,8 @@ use crate::SpiralHexGrid;
 #[class(tool, base=Node3D)]
 struct HexGridNode3D {
     base:Base<Node3D>,
+	#[export]
+	texture:Option<Gd<Texture2D>>,
 	grid_mesh:Option<Gd<MeshInstance3D>>,
 
     #[var(
@@ -53,6 +55,7 @@ impl INode3D for HexGridNode3D {
 	fn init(base: godot::obj::Base < Self::Base >) -> Self {
 
 		HexGridNode3D { base:base,
+		texture: None,
 		grid_mesh: None,
 		grid:None,
 		layers:2,
@@ -67,6 +70,7 @@ impl INode3D for HexGridNode3D {
 				self.grid_mesh = Some(mi);
 				break;
 			}
+
 		}
 		if self.grid_mesh.is_none() {
 			let mi = MeshInstance3D::new_alloc();
@@ -74,6 +78,7 @@ impl INode3D for HexGridNode3D {
 			self.grid_mesh = Some (mi);
 		}
 		self.do_update_grid = self.base().callable("update_grid");
+		self.regenerate();
 	}
 }
 #[godot_api]
@@ -102,7 +107,10 @@ impl HexGridNode3D {
 		//Tool used to construct the mesh
 		let mut builder:Gd<SurfaceTool> = SurfaceTool::new_gd();
 		let mut mat:Gd<StandardMaterial3D> = StandardMaterial3D::new_gd();
+		mat.set_texture(TextureParam::ALBEDO, self.texture.as_ref());
 		mat.set_albedo(Color::GREEN);
+		builder.begin(PrimitiveType::TRIANGLES);
+		builder.set_material(&mat);
 
 		//variables to be set by object settings
 		let tile_count = 7;
@@ -158,10 +166,12 @@ impl HexGridNode3D {
 				//calculate vertex of corner
 				let vi_1 = vi_start + 1 + c;
                 let vi_2 = vi_start + 1 + (c+1)%6;
-				let mut v = Self::get_corner(c, flat_north) + center;
+				let mut v = Self::get_corner(c as i32, flat_north) + center;
 				builder.set_uv(Vector2 { x: v.x, y: v.z });
 				//set height
 				v.y = h;
+
+				builder.set_uv(Vector2{x:v.x, y:v.z});
 
 				//scale
 				v *= scale;
@@ -187,16 +197,6 @@ impl HexGridNode3D {
 			center *= scale;
 			builder.add_vertex(center);
 			//vertecies[vi_start] = center;
-
-			// //Convert to meshdata using the builder
-			// builder = SurfaceTool::new_gd();
-			// builder.begin(PrimitiveType::TRIANGLES);
-			// for vi in 0..vertex_count {
-			// 	builder.add_vertex(vertecies[vi]);
-			// }
-			// for ii in 0..index_count {
-			// 	builder.add_index(indicies[ii]);
-			// }
 		}
 		builder.generate_normals();
 		if self.grid_mesh.is_none(){
@@ -231,10 +231,10 @@ if Engine.is_editor_hint():
 
 		
 	}
-	fn get_corner(c:usize, flat_north:bool) -> Vector3{
-		let angle:i32 = 60 *c as i32 + {if flat_north {0} else {-30}};
-		let angle:f32 = TAU / 360f32 * angle as f32;
-		Vector3 { x: angle.cos(), y: 0.0, z: angle.sin() }
+	fn get_corner(c:i32, flat_north:bool) -> Vector3{
+		let angle:i32 = 60 *c + {if flat_north {-60} else {-90}}; //angle degrees, with offsets
+		let angle:f32 = TAU / 360f32 * angle as f32; //angle radians
+		Vector3 { x: angle.cos(), y: 0.0, z: angle.sin() } //point
 	}
 	fn _autoset_grid_mesh(&mut self){
 		if let Some(grid_mesh) = self.base().find_child("grid_mesh") {

@@ -1,27 +1,18 @@
-[gd_scene load_steps=5 format=3 uid="uid://woxp4hm8oqbm"]
+[gd_scene load_steps=3 format=3 uid="uid://woxp4hm8oqbm"]
 
-[ext_resource type="Script" uid="uid://b1tpk4a3k3n2s" path="res://testhex.gd" id="1_1f2w4"]
 [ext_resource type="Script" uid="uid://cryti4gjqn6ha" path="res://addons/freecam_3D/freecam.gd" id="3_5jl1a"]
-[ext_resource type="Script" uid="uid://nddroatn4dtu" path="res://yellow.gd" id="3_6uqi0"]
-
-[sub_resource type="Mesh" id="Mesh_ppyta"]
-resource_local_to_scene = false
-resource_name = ""
-lightmap_size_hint = Vector2i(0, 0)
-script = ExtResource("3_6uqi0")
-metadata/_custom_type_script = "uid://nddroatn4dtu"
+[ext_resource type="Texture2D" uid="uid://cfi52q6yl0qug" path="res://assets/test1mx1m.png" id="3_6uqi0"]
 
 [node name="Node3D" type="Node3D"]
-script = ExtResource("1_1f2w4")
 
 [node name="Freecam3D" type="Camera3D" parent="."]
 unique_name_in_owner = true
 transform = Transform3D(1, 0, 0, 0, 0.558817, 0.829291, 0, -0.829291, 0.558817, 0, 0.910859, 0.639005)
 script = ExtResource("3_5jl1a")
 
-[node name="OmniLight3D" type="OmniLight3D" parent="Freecam3D"]
-omni_range = 50.0
+[node name="HexGridNode3D" type="HexGridNode3D" parent="."]
+texture = ExtResource("3_6uqi0")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.685411, 0, 0.171475)
-mesh = SubResource("Mesh_ppyta")
+[node name="OmniLight3D" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.351646, 0.936133, 0, -0.936133, 0.351646, 0, 0.910859, 0.639005)
+omni_range = 50.0
