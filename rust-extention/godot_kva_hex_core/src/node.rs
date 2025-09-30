@@ -19,13 +19,15 @@ struct HexGridNode3D {
 	grid_mesh:Option<Gd<MeshInstance3D>>,
 
     #[var(
-        set = set_grid
+        set = set_grid,
+		get = get_grid
     )]
     #[export]
     grid:Option<Gd<SpiralHexGrid>>,
 
     #[var(
         set = set_layers,
+		get = get_layers,
     )]
     #[export(range = (0f64, 255f64))]
     layers:u8,
@@ -64,6 +66,9 @@ impl INode3D for HexGridNode3D {
 
 		}
 	}
+	fn enter_tree(&mut self,) {
+		self.do_update_grid = self.base().callable("update_grid");
+	}
 	fn ready(&mut self,) {
 		for c in self.base().get_children().iter_shared(){
 			if let Ok(mi) = c.try_cast::<MeshInstance3D>(){
@@ -77,7 +82,6 @@ impl INode3D for HexGridNode3D {
 			self.base_mut().add_child(&mi);
 			self.grid_mesh = Some (mi);
 		}
-		self.do_update_grid = self.base().callable("update_grid");
 		self.regenerate();
 	}
 }
@@ -262,10 +266,18 @@ if Engine.is_editor_hint():
 		//TODO
 	}
 	#[func]
+	fn get_grid(&mut self) -> Option<Gd<SpiralHexGrid>>{
+		self.grid.to_godot()
+	}
+	#[func]
 	fn set_layers(&mut self, value:i32){
 		self.layers = value as u8;
 		self.regenerate();
 		//TODO
+	}
+	#[func]
+	fn get_layers(&mut self)-> i32 {
+		self.layers as i32
 	}
 
 	#[func]

@@ -25,7 +25,7 @@ const FLAT:bool = true;
 pub mod node;
 
 #[derive(GodotClass)]
-#[class(base=Resource)]
+#[class(tool, base=Resource)]
 struct SpiralHexGrid {
     //data:[HexContent; NUM_TILES],
     data:Vec<HexContent>,
@@ -41,8 +41,8 @@ impl IResource for SpiralHexGrid {
         //godot_print!("Number of layers: {NUM_LAYERS} - Number of tiles: {NUM_TILES}");
         //std::unimplemented !()
         //Self {data:vec![], layers: 0, super_pos:Hex{q:0,r:0}, origin:Hex{q:0,r:0}}
+        godot_print!("TEST SPIRALHEXGRID INIT");
         Self {data:vec![HexContent{height:0}], num_layers: 0, super_pos:Hex{q:0,r:0}, raw_heightdata:PackedByteArray::new(), raw_size:Vector2i::ONE}
-        
     }
 }
 #[godot_api]
@@ -111,6 +111,16 @@ impl SpiralHexGrid {
     #[func]
     pub fn regenerate(&mut self) {
         let num_tiles = self._get_tile_count();
+        //If no heightmap is loaded, abort with a plain placeholder.
+        if self.raw_size.length_squared() <= 0
+        {
+            godot_print!("Failed to regenerate SpiralHexGrid. Invalid or missing heightmap.\nGenerating a flat map.");
+            for i in 0 .. self.data.len(){
+                self.data[i].height = 0;
+            }
+            return;
+        }
+
         //self.layers = layers;
         //format is set to RGB (3 bytes per pixel) in load_image.
         let num_chan = 3;
@@ -124,7 +134,7 @@ impl SpiralHexGrid {
         let scale:Vector2 = self.raw_size.cast_float() / (num_layers * 2 +1) as f32;
         let sample:Vector2i = Vector2i { x: (scale.x.round() as i32).max(1), y: (scale.y.round() as i32).max(1) };
         //godot_print!("size {size}, x_s_size {x_s_size}, y_s_size {y_s_size}");
-
+        godot_print!("Staring regeration of hexagon data.\nThere are {} tiles to create.\nHeightmap is {} bytes long, over {} channels, with channel {} being used.", num_tiles, data.len(), num_chan, channel);
         //for each hexagon tile from center, spiraling out layer by layer
         for i in 0..num_tiles{
             //get hex coordinates by layer index
@@ -135,14 +145,14 @@ impl SpiralHexGrid {
                  * scale //apply scaling.
                  + (self.raw_size/2 - sample/2).cast_float(); //apply offsets.
             //Get area of pixels to sample for hexagon
-
+            godot_print!("Getting sample region tile {}", i);
             let max = Vector2i{x: point.x as i32 + sample.x, y: point.y as i32 + sample.y}
                 .clamp(Vector2i { x: 1, y: 1 }, Vector2i { x: self.raw_size.x-1, y: self.raw_size.y-1 });
             let min = point.cast_int()
                 .clamp(Vector2i { x: 0, y: 0 }, Vector2i { x: self.raw_size.x-2, y: self.raw_size.y-2 });
 
             //self.data[i].height = get_height_by_sample(x_min, y_min, x_max, y_max, self.raw_size.x, num_chan, &data);
-
+            godot_print!("calculating heightdata for tile {}", i);
             self.data[i].height = {
                 let mut index:usize;
                 let mut sum:u32 = 0;

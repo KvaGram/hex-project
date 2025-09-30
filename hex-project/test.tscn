@@ -1,7 +1,9 @@
-[gd_scene load_steps=3 format=3 uid="uid://woxp4hm8oqbm"]
+[gd_scene load_steps=4 format=3 uid="uid://damepb8e1a5nl"]
 
 [ext_resource type="Script" uid="uid://cryti4gjqn6ha" path="res://addons/freecam_3D/freecam.gd" id="3_5jl1a"]
 [ext_resource type="Texture2D" uid="uid://cfi52q6yl0qug" path="res://assets/test1mx1m.png" id="3_6uqi0"]
+
+[sub_resource type="SpiralHexGrid" id="SpiralHexGrid_8uh7m"]
 
 [node name="Node3D" type="Node3D"]
 
@@ -12,6 +14,8 @@ script = ExtResource("3_5jl1a")
 
 [node name="HexGridNode3D" type="HexGridNode3D" parent="."]
 texture = ExtResource("3_6uqi0")
+grid = SubResource("SpiralHexGrid_8uh7m")
+layers = 0
 
 [node name="OmniLight3D" type="OmniLight3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 0.351646, 0.936133, 0, -0.936133, 0.351646, 0, 0.910859, 0.639005)
